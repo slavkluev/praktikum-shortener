@@ -9,9 +9,9 @@ type Shortener struct {
 	urls  map[uint64]string
 }
 
-func CreateShortener(startId uint64) Shortener {
+func CreateShortener(startID uint64) Shortener {
 	return Shortener{
-		start: startId,
+		start: startID,
 		urls:  make(map[uint64]string),
 	}
 }

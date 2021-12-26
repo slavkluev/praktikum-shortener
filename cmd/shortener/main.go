@@ -31,21 +31,21 @@ func (s ShortenerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resultUrl := r.Host + "/" + strconv.FormatUint(id, 10)
+		resultURL := r.Host + "/" + strconv.FormatUint(id, 10)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(201)
-		w.Write([]byte(resultUrl))
+		w.Write([]byte(resultURL))
 	case http.MethodGet:
-		rawId := strings.TrimPrefix(r.URL.Path, "/")
-		id, err := strconv.ParseUint(rawId, 10, 64)
+		rawID := strings.TrimPrefix(r.URL.Path, "/")
+		id, err := strconv.ParseUint(rawID, 10, 64)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		originUrl, err := s.shortener.GetOriginURL(id)
+		originURL, err := s.shortener.GetOriginURL(id)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -53,7 +53,7 @@ func (s ShortenerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Location", originUrl)
+		w.Header().Set("Location", originURL)
 		w.WriteHeader(307)
 	default:
 		http.Error(w, "Bad request", 400)
@@ -65,7 +65,7 @@ func main() {
 	shortener := app.CreateShortener(1000)
 	handler := &ShortenerHandler{shortener: &shortener}
 	server := &http.Server{
-		Addr:    ":8080",
+		Addr:    "localhost:8080",
 		Handler: handler,
 	}
 	log.Fatal(server.ListenAndServe())
