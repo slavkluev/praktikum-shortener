@@ -31,7 +31,7 @@ func (s ShortenerHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		resultURL := r.Host + "/" + strconv.FormatUint(id, 10)
+		resultURL := "http://" + r.Host + "/" + strconv.FormatUint(id, 10)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(201)
