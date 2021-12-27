@@ -15,7 +15,7 @@ func TestServer_ShortenUrl(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
-		shortUrl    string
+		shortURL    string
 	}
 	tests := []struct {
 		name    string
@@ -36,7 +36,7 @@ func TestServer_ShortenUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  201,
-				shortUrl:    "http://example.com/1002",
+				shortURL:    "http://example.com/1002",
 			},
 			request: "/",
 			body:    "test1.ru",
@@ -53,7 +53,7 @@ func TestServer_ShortenUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  201,
-				shortUrl:    "http://example.com/1002",
+				shortURL:    "http://example.com/1002",
 			},
 			request: "/",
 			body:    "",
@@ -67,16 +67,17 @@ func TestServer_ShortenUrl(t *testing.T) {
 			server := Server{Storage: tt.storage}
 			server.ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
 
-			shortUrl, err := ioutil.ReadAll(result.Body)
+			shortURL, err := ioutil.ReadAll(result.Body)
 			require.NoError(t, err)
 			err = result.Body.Close()
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want.shortUrl, string(shortUrl))
+			assert.Equal(t, tt.want.shortURL, string(shortURL))
 		})
 	}
 }

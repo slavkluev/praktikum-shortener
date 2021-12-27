@@ -12,7 +12,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
-		redirectUrl string
+		redirectURL string
 	}
 	tests := []struct {
 		name    string
@@ -32,7 +32,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  307,
-				redirectUrl: "test2.ru",
+				redirectURL: "test2.ru",
 			},
 			request: "/1001",
 		},
@@ -48,7 +48,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  500,
-				redirectUrl: "",
+				redirectURL: "",
 			},
 			request: "/1009",
 		},
@@ -64,7 +64,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  500,
-				redirectUrl: "",
+				redirectURL: "",
 			},
 			request: "/",
 		},
@@ -77,10 +77,11 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 			server := Server{Storage: tt.storage}
 			server.ServeHTTP(w, request)
 			result := w.Result()
+			defer result.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
 			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			assert.Equal(t, tt.want.redirectUrl, result.Header.Get("Location"))
+			assert.Equal(t, tt.want.redirectURL, result.Header.Get("Location"))
 		})
 	}
 }

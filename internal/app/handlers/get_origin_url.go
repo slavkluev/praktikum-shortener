@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (s *Server) GetOriginalUrl(w http.ResponseWriter, r *http.Request) {
+func (s *Server) GetOriginalURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		rawID := strings.TrimPrefix(r.URL.Path, "/")
 		id, err := strconv.ParseUint(rawID, 10, 64)

@@ -16,9 +16,9 @@ type Server struct {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodPost:
-		s.ShortenUrl(w, r)
+		s.ShortenURL(w, r)
 	case http.MethodGet:
-		s.GetOriginalUrl(w, r)
+		s.GetOriginalURL(w, r)
 	default:
 		s.NotFound(w, r)
 	}

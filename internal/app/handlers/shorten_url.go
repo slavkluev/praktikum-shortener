@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func (s *Server) ShortenUrl(w http.ResponseWriter, r *http.Request) {
+func (s *Server) ShortenURL(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodPost {
 		b, err := io.ReadAll(r.Body)
 
