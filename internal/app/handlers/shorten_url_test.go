@@ -63,6 +63,7 @@ func TestHandler_ShortenUrl(t *testing.T) {
 			defer ts.Close()
 
 			resp, body := testRequest(t, ts, http.MethodPost, tt.path)
+			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
 			assert.Equal(t, tt.want.contentType, resp.Header.Get("Content-Type"))

@@ -76,6 +76,7 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 			defer ts.Close()
 
 			resp, _ := testRequest(t, ts, http.MethodGet, tt.path)
+			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
 			assert.Equal(t, tt.want.contentType, resp.Header.Get("Content-Type"))
