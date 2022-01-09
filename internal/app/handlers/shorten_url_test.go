@@ -3,23 +3,20 @@ package handlers
 import (
 	storages "github.com/slavkluev/praktikum-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 )
 
-func TestServer_ShortenUrl(t *testing.T) {
+func TestHandler_ShortenUrl(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
-		shortURL    string
+		id          string
 	}
 	tests := []struct {
 		name    string
-		request string
+		path    string
 		body    string
 		storage storage
 		want    want
@@ -36,13 +33,13 @@ func TestServer_ShortenUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  201,
-				shortURL:    "http://example.com/1002",
+				id:          "1002",
 			},
-			request: "/",
-			body:    "test1.ru",
+			path: "/",
+			body: "test1.ru",
 		},
 		{
-			name: "empty body #1",
+			name: "empty body #2",
 			storage: &storages.SimpleStorage{
 				Start: 1002,
 				Urls: map[uint64]string{
@@ -53,31 +50,23 @@ func TestServer_ShortenUrl(t *testing.T) {
 			want: want{
 				contentType: "text/plain; charset=utf-8",
 				statusCode:  201,
-				shortURL:    "http://example.com/1002",
+				id:          "1002",
 			},
-			request: "/",
-			body:    "",
+			path: "/",
+			body: "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodPost, tt.request, strings.NewReader(tt.body))
-			w := httptest.NewRecorder()
+			handler := NewHandler(tt.storage)
+			ts := httptest.NewServer(handler)
+			defer ts.Close()
 
-			server := Server{Storage: tt.storage}
-			server.ServeHTTP(w, request)
-			result := w.Result()
-			defer result.Body.Close()
+			resp, body := testRequest(t, ts, http.MethodPost, tt.path)
 
-			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-
-			shortURL, err := ioutil.ReadAll(result.Body)
-			require.NoError(t, err)
-			err = result.Body.Close()
-			require.NoError(t, err)
-
-			assert.Equal(t, tt.want.shortURL, string(shortURL))
+			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
+			assert.Equal(t, tt.want.contentType, resp.Header.Get("Content-Type"))
+			assert.Contains(t, body, tt.want.id)
 		})
 	}
 }

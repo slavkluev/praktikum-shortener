@@ -8,12 +8,10 @@ import (
 )
 
 func main() {
-	myServer := &handlers.Server{
-		Storage: storage.CreateShortener(1000),
-	}
+	handler := handlers.NewHandler(storage.CreateShortener(1000))
 	server := &http.Server{
 		Addr:    "localhost:8080",
-		Handler: myServer,
+		Handler: handler,
 	}
 	log.Fatal(server.ListenAndServe())
 }

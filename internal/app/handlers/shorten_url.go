@@ -6,8 +6,8 @@ import (
 	"strconv"
 )
 
-func (s *Server) ShortenURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodPost {
+func (h *Handler) ShortenURL() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 
 		if err != nil {
@@ -16,7 +16,7 @@ func (s *Server) ShortenURL(w http.ResponseWriter, r *http.Request) {
 		}
 
 		url := string(b)
-		id, err := s.Storage.Put(url)
+		id, err := h.Storage.Put(url)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

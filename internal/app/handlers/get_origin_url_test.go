@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestServer_GetOriginalUrl(t *testing.T) {
+func TestHandler_GetOriginalUrl(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
@@ -16,7 +16,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		request string
+		path    string
 		storage storage
 		want    want
 	}{
@@ -34,7 +34,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 				statusCode:  307,
 				redirectURL: "test2.ru",
 			},
-			request: "/1001",
+			path: "/1001",
 		},
 		{
 			name: "wrong id #2",
@@ -50,7 +50,7 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 				statusCode:  500,
 				redirectURL: "",
 			},
-			request: "/1009",
+			path: "/1009",
 		},
 		{
 			name: "empty id #3",
@@ -62,26 +62,24 @@ func TestServer_GetOriginalUrl(t *testing.T) {
 				},
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
-				statusCode:  500,
+				contentType: "",
+				statusCode:  405,
 				redirectURL: "",
 			},
-			request: "/",
+			path: "/",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			request := httptest.NewRequest(http.MethodGet, tt.request, nil)
-			w := httptest.NewRecorder()
+			handler := NewHandler(tt.storage)
+			ts := httptest.NewServer(handler)
+			defer ts.Close()
 
-			server := Server{Storage: tt.storage}
-			server.ServeHTTP(w, request)
-			result := w.Result()
-			defer result.Body.Close()
+			resp, _ := testRequest(t, ts, http.MethodGet, tt.path)
 
-			assert.Equal(t, tt.want.statusCode, result.StatusCode)
-			assert.Equal(t, tt.want.contentType, result.Header.Get("Content-Type"))
-			assert.Equal(t, tt.want.redirectURL, result.Header.Get("Location"))
+			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
+			assert.Equal(t, tt.want.contentType, resp.Header.Get("Content-Type"))
+			assert.Equal(t, tt.want.redirectURL, resp.Header.Get("Location"))
 		})
 	}
 }

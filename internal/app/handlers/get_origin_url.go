@@ -1,14 +1,14 @@
 package handlers
 
 import (
+	"github.com/go-chi/chi/v5"
 	"net/http"
 	"strconv"
-	"strings"
 )
 
-func (s *Server) GetOriginalURL(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		rawID := strings.TrimPrefix(r.URL.Path, "/")
+func (h *Handler) GetOriginalURL() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		rawID := chi.URLParam(r, "id")
 		id, err := strconv.ParseUint(rawID, 10, 64)
 
 		if err != nil {
@@ -16,7 +16,7 @@ func (s *Server) GetOriginalURL(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		originURL, err := s.Storage.Get(id)
+		originURL, err := h.Storage.Get(id)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
