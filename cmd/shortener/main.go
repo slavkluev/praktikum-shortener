@@ -15,7 +15,7 @@ type Config struct {
 
 func main() {
 	var cfg = Config{
-		ServerAddress: "http://localhost:8080",
+		ServerAddress: "localhost:8080",
 		BaseURL:       "http://localhost:8080",
 	}
 
