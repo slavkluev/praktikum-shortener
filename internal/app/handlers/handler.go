@@ -12,12 +12,14 @@ type storage interface {
 type Handler struct {
 	*chi.Mux
 	Storage storage
+	BaseURL string
 }
 
-func NewHandler(storage storage) *Handler {
+func NewHandler(storage storage, baseURL string) *Handler {
 	h := &Handler{
 		Mux:     chi.NewMux(),
 		Storage: storage,
+		BaseURL: baseURL,
 	}
 	h.Get("/{id}", h.GetOriginalURL())
 	h.Post("/", h.ShortenURL())
