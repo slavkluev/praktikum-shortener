@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestHandler_ShortenUrl(t *testing.T) {
+func TestHandler_ApiShortenUrl(t *testing.T) {
 	type want struct {
 		contentType string
 		statusCode  int
@@ -32,15 +32,32 @@ func TestHandler_ShortenUrl(t *testing.T) {
 				},
 			},
 			want: want{
-				contentType: "text/plain; charset=utf-8",
+				contentType: "application/json",
 				statusCode:  201,
 				id:          "1002",
 			},
-			path: "/",
-			body: "test1.ru",
+			path: "/api/shorten",
+			body: "{\"url\": \"test1.ru\"}",
 		},
 		{
-			name: "empty body #2",
+			name: "empty json #2",
+			storage: &storages.SimpleStorage{
+				Start: 1002,
+				Urls: map[uint64]string{
+					1000: "test1.ru",
+					1001: "test2.ru",
+				},
+			},
+			want: want{
+				contentType: "application/json",
+				statusCode:  201,
+				id:          "1002",
+			},
+			path: "/api/shorten",
+			body: "{}",
+		},
+		{
+			name: "wrong json #3",
 			storage: &storages.SimpleStorage{
 				Start: 1002,
 				Urls: map[uint64]string{
@@ -50,11 +67,11 @@ func TestHandler_ShortenUrl(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
-				statusCode:  201,
-				id:          "1002",
+				statusCode:  500,
+				id:          "",
 			},
-			path: "/",
-			body: "",
+			path: "/api/shorten",
+			body: "{",
 		},
 	}
 	for _, tt := range tests {
