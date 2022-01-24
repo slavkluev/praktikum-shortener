@@ -1,4 +1,4 @@
-package storage
+package storages
 
 import "fmt"
 
@@ -7,7 +7,7 @@ type SimpleStorage struct {
 	Urls  map[uint64]string
 }
 
-func CreateShortener(startID uint64) *SimpleStorage {
+func CreateSimpleStorage(startID uint64) *SimpleStorage {
 	return &SimpleStorage{
 		Start: startID,
 		Urls:  make(map[uint64]string),
