@@ -37,7 +37,7 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 			return
 		}
 
-		resultURL := "http://" + h.BaseURL + "/" + strconv.FormatUint(id, 10)
+		resultURL := h.BaseURL + "/" + strconv.FormatUint(id, 10)
 		response := Response{Result: resultURL}
 
 		res, err := json.Marshal(response)
