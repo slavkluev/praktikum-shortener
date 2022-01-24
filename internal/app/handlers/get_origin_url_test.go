@@ -72,7 +72,7 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.storage)
+			handler := NewHandler(tt.storage, "test.ru")
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 

@@ -23,7 +23,7 @@ func (h *Handler) ShortenURL() http.HandlerFunc {
 			return
 		}
 
-		resultURL := "http://" + r.Host + "/" + strconv.FormatUint(id, 10)
+		resultURL := "http://" + h.BaseURL + "/" + strconv.FormatUint(id, 10)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(201)
