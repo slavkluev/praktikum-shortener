@@ -4,6 +4,7 @@ import (
 	storages "github.com/slavkluev/praktikum-shortener/internal/app/storage"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -22,8 +23,8 @@ func TestNewHandler(t *testing.T) {
 	assert.Implements(t, (*http.Handler)(nil), handler)
 }
 
-func testRequest(t *testing.T, ts *httptest.Server, method, path string) (*http.Response, string) {
-	req, err := http.NewRequest(method, ts.URL+path, nil)
+func testRequest(t *testing.T, ts *httptest.Server, method, path string, body io.Reader) (*http.Response, string) {
+	req, err := http.NewRequest(method, ts.URL+path, body)
 	require.NoError(t, err)
 
 	client := &http.Client{

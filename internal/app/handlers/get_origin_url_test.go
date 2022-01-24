@@ -5,6 +5,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -75,7 +76,7 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 
-			resp, _ := testRequest(t, ts, http.MethodGet, tt.path)
+			resp, _ := testRequest(t, ts, http.MethodGet, tt.path, strings.NewReader(""))
 			defer resp.Body.Close()
 
 			assert.Equal(t, tt.want.statusCode, resp.StatusCode)
