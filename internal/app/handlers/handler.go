@@ -21,7 +21,7 @@ func NewHandler(storage storage) *Handler {
 	}
 	h.Get("/{id}", h.GetOriginalURL())
 	h.Post("/", h.ShortenURL())
-	h.Post("/api/shorten", h.ApiShortenURL())
+	h.Post("/api/shorten", h.APIShortenURL())
 	h.NotFound(h.ShowNotFoundPage())
 
 	return h

@@ -8,14 +8,14 @@ import (
 )
 
 type Request struct {
-	Url string `json:"url"`
+	URL string `json:"url"`
 }
 
 type Response struct {
 	Result string `json:"result"`
 }
 
-func (h *Handler) ApiShortenURL() http.HandlerFunc {
+func (h *Handler) APIShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 
@@ -30,7 +30,7 @@ func (h *Handler) ApiShortenURL() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.Storage.Put(request.Url)
+		id, err := h.Storage.Put(request.URL)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
