@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"github.com/caarlos0/env/v6"
 	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
@@ -25,6 +26,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
+	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
+	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
+	flag.Parse()
 
 	storage, err := storages.CreateFileStorage(cfg.FileStoragePath)
 	if err != nil {
