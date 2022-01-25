@@ -100,6 +100,15 @@ func (s *SimpleStorage) Put(url string) (uint64, error) {
 
 	s.Urls[id] = url
 
+	err := s.writeRecordToFile(Record{
+		ID:  id,
+		URL: url,
+	})
+
+	if err != nil {
+		return 0, err
+	}
+
 	return id, nil
 }
 
@@ -127,7 +136,7 @@ func (s *SimpleStorage) updateDataFile() error {
 	}
 
 	for ID, URL := range s.Urls {
-		data, err := json.Marshal(&Record{
+		err := s.writeRecordToFile(Record{
 			ID:  ID,
 			URL: URL,
 		})
@@ -135,10 +144,20 @@ func (s *SimpleStorage) updateDataFile() error {
 		if err != nil {
 			return err
 		}
-
-		data = append(data, '\n')
-		_, err = s.file.Write(data)
 	}
 
 	return nil
+}
+
+func (s *SimpleStorage) writeRecordToFile(record Record) error {
+	data, err := json.Marshal(record)
+
+	if err != nil {
+		return err
+	}
+
+	data = append(data, '\n')
+	_, err = s.file.Write(data)
+
+	return err
 }
