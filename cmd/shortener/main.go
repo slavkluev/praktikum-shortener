@@ -29,10 +29,10 @@ func main() {
 
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
-	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
+	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
 	flag.Parse()
 
-	storage, err := storages.CreateFileStorage(cfg.FileStoragePath)
+	storage, err := storages.CreateSimpleStorage(cfg.FileStoragePath, 5)
 	if err != nil {
 		log.Fatal(err)
 	}
