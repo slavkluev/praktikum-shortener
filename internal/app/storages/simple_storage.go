@@ -12,7 +12,7 @@ import (
 type SimpleStorage struct {
 	Start  uint64
 	Urls   map[uint64]string
-	file   *os.File
+	File   *os.File
 	ticker *time.Ticker
 	done   chan bool
 }
@@ -39,7 +39,7 @@ func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) 
 	simpleStorage := &SimpleStorage{
 		Start:  lastID + 1,
 		Urls:   urls,
-		file:   file,
+		File:   file,
 		ticker: ticker,
 		done:   done,
 	}
@@ -121,16 +121,16 @@ func (s *SimpleStorage) Close() error {
 		return err
 	}
 
-	return s.file.Close()
+	return s.File.Close()
 }
 
 func (s *SimpleStorage) updateDataFile() error {
-	err := s.file.Truncate(0)
+	err := s.File.Truncate(0)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.file.Seek(0, io.SeekStart)
+	_, err = s.File.Seek(0, io.SeekStart)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func (s *SimpleStorage) writeRecordToFile(record Record) error {
 	}
 
 	data = append(data, '\n')
-	_, err = s.file.Write(data)
+	_, err = s.File.Write(data)
 
 	return err
 }

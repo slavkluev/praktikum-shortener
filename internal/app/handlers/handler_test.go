@@ -1,7 +1,7 @@
 package handlers
 
 import (
-	storages "github.com/slavkluev/praktikum-shortener/internal/app/storages"
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"

@@ -1,15 +1,24 @@
 package handlers
 
 import (
-	storages "github.com/slavkluev/praktikum-shortener/internal/app/storages"
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"github.com/stretchr/testify/assert"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestHandler_ShortenUrl(t *testing.T) {
+	file, err := ioutil.TempFile("", "db")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer os.Remove(file.Name())
+
 	type want struct {
 		contentType string
 		statusCode  int
@@ -30,6 +39,7 @@ func TestHandler_ShortenUrl(t *testing.T) {
 					1000: "test1.ru",
 					1001: "test2.ru",
 				},
+				File: file,
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
@@ -47,6 +57,7 @@ func TestHandler_ShortenUrl(t *testing.T) {
 					1000: "test1.ru",
 					1001: "test2.ru",
 				},
+				File: file,
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
