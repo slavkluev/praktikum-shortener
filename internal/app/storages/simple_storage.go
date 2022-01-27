@@ -100,15 +100,6 @@ func (s *SimpleStorage) Put(url string) (uint64, error) {
 
 	s.Urls[id] = url
 
-	err := s.writeRecordToFile(Record{
-		ID:  id,
-		URL: url,
-	})
-
-	if err != nil {
-		return 0, err
-	}
-
 	return id, nil
 }
 
