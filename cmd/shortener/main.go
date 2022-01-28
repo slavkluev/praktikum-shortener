@@ -7,6 +7,9 @@ import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 type Config struct {
@@ -36,12 +39,25 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer storage.Close()
 
 	handler := handlers.NewHandler(storage, cfg.BaseURL)
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: handler,
 	}
+
+	c := make(chan os.Signal, 1)
+	signal.Notify(c,
+		syscall.SIGHUP,
+		syscall.SIGINT,
+		syscall.SIGTERM,
+		syscall.SIGQUIT)
+
+	go func() {
+		<-c
+		storage.Close()
+		server.Close()
+	}()
+
 	log.Fatal(server.ListenAndServe())
 }
