@@ -4,6 +4,7 @@ import (
 	"flag"
 	"github.com/caarlos0/env/v6"
 	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
+	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"log"
 	"net/http"
@@ -19,28 +20,19 @@ type Config struct {
 }
 
 func main() {
-	var cfg = Config{
-		ServerAddress:   "localhost:8080",
-		BaseURL:         "http://localhost:8080",
-		FileStoragePath: "db.txt",
-	}
-
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
-	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
-	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
-	flag.Parse()
+	cfg := parseVariables()
 
 	storage, err := storages.CreateSimpleStorage(cfg.FileStoragePath, 5)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	handler := handlers.NewHandler(storage, cfg.BaseURL)
+	mws := []handlers.Middleware{
+		middlewares.GzipEncoder{},
+		middlewares.GzipDecoder{},
+	}
+
+	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: handler,
@@ -60,4 +52,24 @@ func main() {
 	}()
 
 	log.Fatal(server.ListenAndServe())
+}
+
+func parseVariables() Config {
+	var cfg = Config{
+		ServerAddress:   "localhost:8080",
+		BaseURL:         "http://localhost:8080",
+		FileStoragePath: "db.txt",
+	}
+
+	err := env.Parse(&cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
+	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
+	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
+	flag.Parse()
+
+	return cfg
 }

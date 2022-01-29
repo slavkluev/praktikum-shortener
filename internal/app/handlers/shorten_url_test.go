@@ -28,7 +28,7 @@ func TestHandler_ShortenUrl(t *testing.T) {
 		name    string
 		path    string
 		body    string
-		storage storage
+		storage Storage
 		want    want
 	}{
 		{
@@ -70,7 +70,7 @@ func TestHandler_ShortenUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.storage, "test.ru")
+			handler := NewHandler(tt.storage, "test.ru", []Middleware{})
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 

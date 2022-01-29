@@ -19,7 +19,7 @@ func TestNewHandler(t *testing.T) {
 			1001: "test2.ru",
 		},
 	}
-	handler := NewHandler(storage, "test.ru")
+	handler := NewHandler(storage, "test.ru", []Middleware{})
 	assert.Implements(t, (*http.Handler)(nil), handler)
 }
 
