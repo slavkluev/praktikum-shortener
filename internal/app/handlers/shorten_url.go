@@ -15,8 +15,15 @@ func (h *Handler) ShortenURL() http.HandlerFunc {
 			return
 		}
 
+		userCookie, err := r.Cookie("user_id")
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
 		url := string(b)
-		id, err := h.Storage.Put(url)
+		id, err := h.Storage.Put(userCookie.Value, url)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

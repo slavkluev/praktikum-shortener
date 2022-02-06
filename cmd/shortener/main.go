@@ -22,7 +22,7 @@ type Config struct {
 func main() {
 	cfg := parseVariables()
 
-	storage, err := storages.CreateSimpleStorage(cfg.FileStoragePath, 5)
+	storage, err := storages.CreateSimpleStorage(cfg.FileStoragePath, 1)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,6 +30,7 @@ func main() {
 	mws := []handlers.Middleware{
 		middlewares.GzipEncoder{},
 		middlewares.GzipDecoder{},
+		middlewares.NewAuthenticator([]byte("secret key")),
 	}
 
 	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)

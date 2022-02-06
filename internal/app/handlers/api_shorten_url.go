@@ -30,7 +30,14 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.Storage.Put(request.URL)
+		userCookie, err := r.Cookie("user_id")
+
+		if err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		id, err := h.Storage.Put(userCookie.Value, request.URL)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

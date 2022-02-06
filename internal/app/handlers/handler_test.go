@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,12 +15,24 @@ import (
 func TestNewHandler(t *testing.T) {
 	storage := &storages.SimpleStorage{
 		Start: 1002,
-		Urls: map[uint64]string{
-			1000: "test1.ru",
-			1001: "test2.ru",
+		Records: map[uint64]storages.Record{
+			1000: {
+				ID:   1000,
+				User: "user",
+				URL:  "test1.ru",
+			},
+			1001: {
+				ID:   1001,
+				User: "user",
+				URL:  "test2.ru",
+			},
 		},
 	}
-	handler := NewHandler(storage, "test.ru", []Middleware{})
+	handler := NewHandler(storage, "test.ru", []Middleware{
+		middlewares.GzipEncoder{},
+		middlewares.GzipDecoder{},
+		middlewares.NewAuthenticator([]byte("secret key")),
+	})
 	assert.Implements(t, (*http.Handler)(nil), handler)
 }
 
