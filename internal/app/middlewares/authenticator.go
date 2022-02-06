@@ -23,8 +23,8 @@ func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 		signCookie, signErr := r.Cookie("sign")
 
 		if userErr != nil || signErr != nil {
-			newUserId, sign, _ := a.generateUserId()
-			a.setCookies(w, r, newUserId, sign)
+			newUserID, sign, _ := a.generateUserID()
+			a.setCookies(w, r, newUserID, sign)
 		} else {
 			h := hmac.New(sha256.New, a.secret)
 			h.Write([]byte(userCookie.Value))
@@ -36,8 +36,8 @@ func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 			}
 
 			if !hmac.Equal(calculatedSign, sign) {
-				newUserId, sign, _ := a.generateUserId()
-				a.setCookies(w, r, newUserId, sign)
+				newUserID, sign, _ := a.generateUserID()
+				a.setCookies(w, r, newUserID, sign)
 			}
 		}
 
@@ -45,11 +45,11 @@ func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
-func (a Authenticator) generateUserId() (string, string, error) {
-	newUserId := uuid.New().String()
+func (a Authenticator) generateUserID() (string, string, error) {
+	newUserID := uuid.New().String()
 
 	h := hmac.New(sha256.New, a.secret)
-	_, err := h.Write([]byte(newUserId))
+	_, err := h.Write([]byte(newUserID))
 
 	if err != nil {
 		return "", "", err
@@ -57,25 +57,25 @@ func (a Authenticator) generateUserId() (string, string, error) {
 
 	sign := h.Sum(nil)
 
-	return newUserId, hex.EncodeToString(sign), nil
+	return newUserID, hex.EncodeToString(sign), nil
 }
 
-func (a Authenticator) setCookies(w http.ResponseWriter, r *http.Request, userId, sign string) {
-	userIdCookie := &http.Cookie{
+func (a Authenticator) setCookies(w http.ResponseWriter, r *http.Request, userID, sign string) {
+	userIDCookie := &http.Cookie{
 		Name:  "user_id",
-		Value: userId,
+		Value: userID,
 	}
 	signCookie := &http.Cookie{
 		Name:  "sign",
 		Value: sign,
 	}
 
-	http.SetCookie(w, userIdCookie)
+	http.SetCookie(w, userIDCookie)
 	http.SetCookie(w, signCookie)
 
 	_, err := r.Cookie("user_id")
 	if err != nil {
-		r.AddCookie(userIdCookie)
+		r.AddCookie(userIDCookie)
 	}
 
 	_, err = r.Cookie("sign")

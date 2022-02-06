@@ -95,17 +95,17 @@ func (s *SimpleStorage) Get(id uint64) (Record, error) {
 	return Record{}, fmt.Errorf("id %d have not found", id)
 }
 
-func (s *SimpleStorage) GetByUser(userId string) ([]Record, error) {
+func (s *SimpleStorage) GetByUser(userID string) ([]Record, error) {
 	records := make([]Record, 0)
 
 	for _, record := range s.Records {
-		if record.User == userId {
+		if record.User == userID {
 			records = append(records, record)
 		}
 	}
 
 	if len(records) == 0 {
-		return nil, fmt.Errorf("records with user_id %s have not found", userId)
+		return nil, fmt.Errorf("records with user_id %s have not found", userID)
 	}
 
 	return records, nil

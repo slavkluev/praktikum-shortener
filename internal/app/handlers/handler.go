@@ -8,7 +8,7 @@ import (
 
 type Storage interface {
 	Get(id uint64) (storages.Record, error)
-	GetByUser(userId string) ([]storages.Record, error)
+	GetByUser(userID string) ([]storages.Record, error)
 	Put(user, URL string) (uint64, error)
 }
 
