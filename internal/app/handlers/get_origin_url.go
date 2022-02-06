@@ -16,7 +16,7 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 			return
 		}
 
-		originURL, err := h.Storage.Get(id)
+		record, err := h.Storage.Get(id)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
@@ -24,7 +24,7 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 		}
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.Header().Set("Location", originURL)
+		w.Header().Set("Location", record.URL)
 		w.WriteHeader(307)
 	}
 }

@@ -10,16 +10,17 @@ import (
 )
 
 type SimpleStorage struct {
-	Start  uint64
-	Urls   map[uint64]string
-	File   *os.File
-	ticker *time.Ticker
-	done   chan bool
+	Start   uint64
+	Records map[uint64]Record
+	File    *os.File
+	ticker  *time.Ticker
+	done    chan bool
 }
 
 type Record struct {
-	ID  uint64
-	URL string
+	ID   uint64
+	User string
+	URL  string
 }
 
 func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) {
@@ -29,7 +30,7 @@ func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) 
 		return nil, err
 	}
 
-	lastID, urls, err := loadDataFromFile(file)
+	lastID, records, err := loadDataFromFile(file)
 	if err != nil {
 		return nil, err
 	}
@@ -37,11 +38,11 @@ func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) 
 	ticker := time.NewTicker(time.Duration(syncTime) * time.Minute)
 	done := make(chan bool)
 	simpleStorage := &SimpleStorage{
-		Start:  lastID + 1,
-		Urls:   urls,
-		File:   file,
-		ticker: ticker,
-		done:   done,
+		Start:   lastID + 1,
+		Records: records,
+		File:    file,
+		ticker:  ticker,
+		done:    done,
 	}
 
 	go simpleStorage.synchronize()
@@ -49,9 +50,9 @@ func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) 
 	return simpleStorage, nil
 }
 
-func loadDataFromFile(file *os.File) (uint64, map[uint64]string, error) {
+func loadDataFromFile(file *os.File) (uint64, map[uint64]Record, error) {
 	var lastID uint64 = 0
-	var urls = make(map[uint64]string)
+	var urls = make(map[uint64]Record)
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
 		data := scanner.Bytes()
@@ -66,7 +67,7 @@ func loadDataFromFile(file *os.File) (uint64, map[uint64]string, error) {
 			lastID = record.ID
 		}
 
-		urls[record.ID] = record.URL
+		urls[record.ID] = record
 	}
 
 	return lastID, urls, nil
@@ -86,19 +87,39 @@ func (s *SimpleStorage) synchronize() {
 	}
 }
 
-func (s *SimpleStorage) Get(id uint64) (string, error) {
-	if url, ok := s.Urls[id]; ok {
-		return url, nil
+func (s *SimpleStorage) Get(id uint64) (Record, error) {
+	if record, ok := s.Records[id]; ok {
+		return record, nil
 	}
 
-	return "", fmt.Errorf("id %d have not found", id)
+	return Record{}, fmt.Errorf("id %d have not found", id)
 }
 
-func (s *SimpleStorage) Put(url string) (uint64, error) {
+func (s *SimpleStorage) GetByUser(userId string) ([]Record, error) {
+	records := make([]Record, 0)
+
+	for _, record := range s.Records {
+		if record.User == userId {
+			records = append(records, record)
+		}
+	}
+
+	if len(records) == 0 {
+		return nil, fmt.Errorf("records with user_id %s have not found", userId)
+	}
+
+	return records, nil
+}
+
+func (s *SimpleStorage) Put(user, URL string) (uint64, error) {
 	id := s.Start
 	s.Start++
 
-	s.Urls[id] = url
+	s.Records[id] = Record{
+		ID:   id,
+		User: user,
+		URL:  URL,
+	}
 
 	return id, nil
 }
@@ -126,11 +147,8 @@ func (s *SimpleStorage) updateDataFile() error {
 		return err
 	}
 
-	for ID, URL := range s.Urls {
-		err := s.writeRecordToFile(Record{
-			ID:  ID,
-			URL: URL,
-		})
+	for _, record := range s.Records {
+		err := s.writeRecordToFile(record)
 
 		if err != nil {
 			return err
