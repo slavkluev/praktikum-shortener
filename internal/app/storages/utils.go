@@ -5,3 +5,10 @@ type Record struct {
 	User string
 	URL  string
 }
+
+type BatchRecord struct {
+	ID            uint64
+	User          string
+	URL           string
+	CorrelationID string
+}

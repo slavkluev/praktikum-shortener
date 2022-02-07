@@ -79,3 +79,31 @@ func (s *DatabaseStorage) Put(ctx context.Context, record Record) (uint64, error
 
 	return id, nil
 }
+
+func (s *DatabaseStorage) PutRecords(ctx context.Context, records []BatchRecord) ([]BatchRecord, error) {
+	tx, err := s.db.Begin()
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	sqlStatement := "INSERT INTO url (user_id, origin_url) VALUES ($1, $2) RETURNING id"
+	stmt, err := tx.PrepareContext(ctx, sqlStatement)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	for id := range records {
+		err = stmt.QueryRowContext(ctx, records[id].User, records[id].URL).Scan(&records[id].ID)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	return records, nil
+}
