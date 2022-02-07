@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
@@ -37,7 +38,10 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 			return
 		}
 
-		id, err := h.Storage.Put(userCookie.Value, request.URL)
+		id, err := h.Storage.Put(r.Context(), storages.Record{
+			User: userCookie.Value,
+			URL:  request.URL,
+		})
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

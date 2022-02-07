@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"context"
 	"database/sql"
 	"github.com/go-chi/chi/v5"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
@@ -8,9 +9,9 @@ import (
 )
 
 type Storage interface {
-	Get(id uint64) (storages.Record, error)
-	GetByUser(userID string) ([]storages.Record, error)
-	Put(user, URL string) (uint64, error)
+	Get(ctx context.Context, id uint64) (storages.Record, error)
+	GetByUser(ctx context.Context, userID string) ([]storages.Record, error)
+	Put(ctx context.Context, record storages.Record) (uint64, error)
 }
 
 type Middleware interface {

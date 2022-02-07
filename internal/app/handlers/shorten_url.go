@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
@@ -23,7 +24,10 @@ func (h *Handler) ShortenURL() http.HandlerFunc {
 		}
 
 		url := string(b)
-		id, err := h.Storage.Put(userCookie.Value, url)
+		id, err := h.Storage.Put(r.Context(), storages.Record{
+			User: userCookie.Value,
+			URL:  url,
+		})
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)

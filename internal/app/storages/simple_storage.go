@@ -2,6 +2,7 @@ package storages
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -15,12 +16,6 @@ type SimpleStorage struct {
 	File    *os.File
 	ticker  *time.Ticker
 	done    chan bool
-}
-
-type Record struct {
-	ID   uint64
-	User string
-	URL  string
 }
 
 func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) {
@@ -87,7 +82,7 @@ func (s *SimpleStorage) synchronize() {
 	}
 }
 
-func (s *SimpleStorage) Get(id uint64) (Record, error) {
+func (s *SimpleStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	if record, ok := s.Records[id]; ok {
 		return record, nil
 	}
@@ -95,7 +90,7 @@ func (s *SimpleStorage) Get(id uint64) (Record, error) {
 	return Record{}, fmt.Errorf("id %d have not found", id)
 }
 
-func (s *SimpleStorage) GetByUser(userID string) ([]Record, error) {
+func (s *SimpleStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
 	records := make([]Record, 0)
 
 	for _, record := range s.Records {
@@ -111,17 +106,13 @@ func (s *SimpleStorage) GetByUser(userID string) ([]Record, error) {
 	return records, nil
 }
 
-func (s *SimpleStorage) Put(user, URL string) (uint64, error) {
-	id := s.Start
+func (s *SimpleStorage) Put(ctx context.Context, record Record) (uint64, error) {
+	record.ID = s.Start
 	s.Start++
 
-	s.Records[id] = Record{
-		ID:   id,
-		User: user,
-		URL:  URL,
-	}
+	s.Records[record.ID] = record
 
-	return id, nil
+	return record.ID, nil
 }
 
 func (s *SimpleStorage) Close() error {

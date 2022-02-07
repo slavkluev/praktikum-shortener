@@ -16,7 +16,7 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 			return
 		}
 
-		record, err := h.Storage.Get(id)
+		record, err := h.Storage.Get(r.Context(), id)
 
 		if err != nil {
 			http.Error(w, err.Error(), 500)
