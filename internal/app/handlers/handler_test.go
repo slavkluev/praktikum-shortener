@@ -32,7 +32,7 @@ func TestNewHandler(t *testing.T) {
 		middlewares.GzipEncoder{},
 		middlewares.GzipDecoder{},
 		middlewares.NewAuthenticator([]byte("secret key")),
-	})
+	}, nil)
 	assert.Implements(t, (*http.Handler)(nil), handler)
 }
 

@@ -117,7 +117,7 @@ func TestHandler_ApiShortenUrl(t *testing.T) {
 				middlewares.GzipEncoder{},
 				middlewares.GzipDecoder{},
 				middlewares.NewAuthenticator([]byte("secret key")),
-			})
+			}, nil)
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 
