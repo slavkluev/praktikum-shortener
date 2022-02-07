@@ -1,8 +1,10 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"github.com/caarlos0/env/v6"
+	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
 	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
@@ -17,10 +19,17 @@ type Config struct {
 	ServerAddress   string `env:"SERVER_ADDRESS"`
 	BaseURL         string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 func main() {
 	cfg := parseVariables()
+
+	db, err := sql.Open("pgx", cfg.DatabaseDSN)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
 
 	storage, err := storages.CreateSimpleStorage(cfg.FileStoragePath, 1)
 	if err != nil {
@@ -33,7 +42,7 @@ func main() {
 		middlewares.NewAuthenticator([]byte("secret key")),
 	}
 
-	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)
+	handler := handlers.NewHandler(storage, cfg.BaseURL, mws, db)
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: handler,
@@ -69,7 +78,8 @@ func parseVariables() Config {
 
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
-	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "file storage path")
+	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
+	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database DSN")
 	flag.Parse()
 
 	return cfg
