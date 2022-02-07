@@ -20,7 +20,7 @@ func (h *Handler) GetAllUrls() http.HandlerFunc {
 			return
 		}
 
-		records, err := h.Storage.GetByUser(userCookie.Value)
+		records, err := h.Storage.GetByUser(r.Context(), userCookie.Value)
 
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNoContent)
