@@ -14,16 +14,19 @@ type ShortenURL struct {
 func (h *Handler) GetAllUrls() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userCookie, err := r.Cookie("user_id")
-
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
 		records, err := h.Storage.GetByUser(r.Context(), userCookie.Value)
-
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusNoContent)
+			http.Error(w, err.Error(), 500)
+			return
+		}
+
+		if len(records) == 0 {
+			http.Error(w, "Not found", http.StatusNoContent)
 			return
 		}
 
@@ -37,7 +40,6 @@ func (h *Handler) GetAllUrls() http.HandlerFunc {
 		}
 
 		res, err := json.Marshal(shortenUrls)
-
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
