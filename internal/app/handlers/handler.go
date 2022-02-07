@@ -21,7 +21,7 @@ type Handler struct {
 	*chi.Mux
 	Storage Storage
 	BaseURL string
-	Db      *sql.DB
+	DB      *sql.DB
 }
 
 func NewHandler(storage Storage, baseURL string, middlewares []Middleware, db *sql.DB) *Handler {
@@ -29,7 +29,7 @@ func NewHandler(storage Storage, baseURL string, middlewares []Middleware, db *s
 		Mux:     chi.NewMux(),
 		Storage: storage,
 		BaseURL: baseURL,
-		Db:      db,
+		DB:      db,
 	}
 
 	h.Get("/ping", applyMiddlewares(h.Ping(), middlewares))
