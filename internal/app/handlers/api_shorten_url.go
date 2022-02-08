@@ -2,6 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
@@ -19,7 +22,6 @@ type Response struct {
 func (h *Handler) APIShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
-
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -32,7 +34,6 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 		}
 
 		userCookie, err := r.Cookie("user_id")
-
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -43,16 +44,32 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 			URL:  request.URL,
 		})
 
+		var pge *pgconn.PgError
+		if err != nil && errors.As(err, &pge) && pge.Code == pgerrcode.UniqueViolation {
+			record, err := h.Storage.GetByOriginURL(r.Context(), request.URL)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+
+			res, err := h.formatResult(record.ID)
+			if err != nil {
+				http.Error(w, err.Error(), 500)
+				return
+			}
+
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(409)
+			w.Write(res)
+			return
+		}
+
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
 		}
 
-		resultURL := h.BaseURL + "/" + strconv.FormatUint(id, 10)
-		response := Response{Result: resultURL}
-
-		res, err := json.Marshal(response)
-
+		res, err := h.formatResult(id)
 		if err != nil {
 			http.Error(w, err.Error(), 500)
 			return
@@ -62,4 +79,10 @@ func (h *Handler) APIShortenURL() http.HandlerFunc {
 		w.WriteHeader(201)
 		w.Write(res)
 	}
+}
+
+func (h *Handler) formatResult(id uint64) ([]byte, error) {
+	resultURL := h.BaseURL + "/" + strconv.FormatUint(id, 10)
+	response := Response{Result: resultURL}
+	return json.Marshal(response)
 }

@@ -90,6 +90,16 @@ func (s *SimpleStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	return Record{}, fmt.Errorf("id %d have not found", id)
 }
 
+func (s *SimpleStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
+	for _, record := range s.Records {
+		if record.URL == originURL {
+			return record, nil
+		}
+	}
+
+	return Record{}, fmt.Errorf("originURL %s have not found", originURL)
+}
+
 func (s *SimpleStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
 	records := make([]Record, 0)
 

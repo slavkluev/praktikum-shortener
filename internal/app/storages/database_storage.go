@@ -23,7 +23,7 @@ func CreateDatabaseStorage(db *sql.DB) (*DatabaseStorage, error) {
 }
 
 func (s *DatabaseStorage) init() error {
-	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS url ( id bigserial primary key, user_id varchar(36), origin_url varchar(255) )")
+	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS url ( id bigserial primary key, user_id varchar(36), origin_url varchar(255), CONSTRAINT origin_url_unique UNIQUE (origin_url) )")
 
 	return err
 }
@@ -32,6 +32,18 @@ func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	var record Record
 
 	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE id = $1", id)
+	err := row.Scan(&record.ID, &record.User, &record.URL)
+	if err != nil {
+		return Record{}, err
+	}
+
+	return record, nil
+}
+
+func (s *DatabaseStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
+	var record Record
+
+	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE origin_url = $1", originURL)
 	err := row.Scan(&record.ID, &record.User, &record.URL)
 	if err != nil {
 		return Record{}, err
@@ -74,7 +86,7 @@ func (s *DatabaseStorage) Put(ctx context.Context, record Record) (uint64, error
 	sqlStatement := "INSERT INTO url (user_id, origin_url) VALUES ($1, $2) RETURNING id"
 	err := s.db.QueryRowContext(ctx, sqlStatement, record.User, record.URL).Scan(&id)
 	if err != nil {
-		return 0, err
+		return id, err
 	}
 
 	return id, nil

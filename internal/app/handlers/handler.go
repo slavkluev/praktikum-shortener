@@ -10,6 +10,7 @@ import (
 
 type Storage interface {
 	Get(ctx context.Context, id uint64) (storages.Record, error)
+	GetByOriginURL(ctx context.Context, originURL string) (storages.Record, error)
 	GetByUser(ctx context.Context, userID string) ([]storages.Record, error)
 	Put(ctx context.Context, record storages.Record) (uint64, error)
 	PutRecords(ctx context.Context, records []storages.BatchRecord) ([]storages.BatchRecord, error)
