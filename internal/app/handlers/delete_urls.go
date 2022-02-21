@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 	"sync"
 )
 
@@ -15,10 +16,21 @@ func (h *Handler) DeleteUrls() http.HandlerFunc {
 			return
 		}
 
-		var ids []uint64
-		if err := json.Unmarshal(b, &ids); err != nil {
+		var rawIds []string
+		if err := json.Unmarshal(b, &rawIds); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
+		}
+
+		var ids []uint64
+		for _, rawID := range rawIds {
+			id, err := strconv.ParseUint(rawID, 10, 64)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+
+			ids = append(ids, id)
 		}
 
 		userCookie, err := r.Cookie("user_id")
