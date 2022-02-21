@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"github.com/stretchr/testify/assert"
 	"io/ioutil"
@@ -27,16 +28,24 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 	tests := []struct {
 		name    string
 		path    string
-		storage storage
+		storage Storage
 		want    want
 	}{
 		{
 			name: "simple test #1",
 			storage: &storages.SimpleStorage{
 				Start: 1002,
-				Urls: map[uint64]string{
-					1000: "test1.ru",
-					1001: "test2.ru",
+				Records: map[uint64]storages.Record{
+					1000: {
+						ID:   1000,
+						User: "user",
+						URL:  "test1.ru",
+					},
+					1001: {
+						ID:   1001,
+						User: "user",
+						URL:  "test2.ru",
+					},
 				},
 				File: file,
 			},
@@ -51,15 +60,23 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 			name: "wrong id #2",
 			storage: &storages.SimpleStorage{
 				Start: 1002,
-				Urls: map[uint64]string{
-					1000: "test1.ru",
-					1001: "test2.ru",
+				Records: map[uint64]storages.Record{
+					1000: {
+						ID:   1000,
+						User: "user",
+						URL:  "test1.ru",
+					},
+					1001: {
+						ID:   1001,
+						User: "user",
+						URL:  "test2.ru",
+					},
 				},
 				File: file,
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
-				statusCode:  500,
+				statusCode:  404,
 				redirectURL: "",
 			},
 			path: "/1009",
@@ -68,9 +85,17 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 			name: "empty id #3",
 			storage: &storages.SimpleStorage{
 				Start: 1002,
-				Urls: map[uint64]string{
-					1000: "test1.ru",
-					1001: "test2.ru",
+				Records: map[uint64]storages.Record{
+					1000: {
+						ID:   1000,
+						User: "user",
+						URL:  "test1.ru",
+					},
+					1001: {
+						ID:   1001,
+						User: "user",
+						URL:  "test2.ru",
+					},
 				},
 				File: file,
 			},
@@ -84,7 +109,11 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			handler := NewHandler(tt.storage, "test.ru")
+			handler := NewHandler(tt.storage, "test.ru", []Middleware{
+				middlewares.GzipEncoder{},
+				middlewares.GzipDecoder{},
+				middlewares.NewAuthenticator([]byte("secret key")),
+			})
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 

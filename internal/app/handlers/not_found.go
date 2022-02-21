@@ -6,6 +6,6 @@ import (
 
 func (h *Handler) ShowNotFoundPage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, "Not found", 404)
+		http.Error(w, "Not found", http.StatusNotFound)
 	}
 }
