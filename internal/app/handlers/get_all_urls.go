@@ -15,13 +15,13 @@ func (h *Handler) GetAllUrls() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userCookie, err := r.Cookie("user_id")
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		records, err := h.Storage.GetByUser(r.Context(), userCookie.Value)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -30,8 +30,7 @@ func (h *Handler) GetAllUrls() http.HandlerFunc {
 			return
 		}
 
-		shortenUrls := make([]ShortenURL, 0)
-
+		var shortenUrls []ShortenURL
 		for _, record := range records {
 			shortenUrls = append(shortenUrls, ShortenURL{
 				ShortURL:    h.BaseURL + "/" + strconv.FormatUint(record.ID, 10),
@@ -41,12 +40,12 @@ func (h *Handler) GetAllUrls() http.HandlerFunc {
 
 		res, err := json.Marshal(shortenUrls)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 		w.Write(res)
 	}
 }

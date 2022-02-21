@@ -119,3 +119,7 @@ func (s *DatabaseStorage) PutRecords(ctx context.Context, records []BatchRecord)
 
 	return records, nil
 }
+
+func (s *DatabaseStorage) Ping(ctx context.Context) error {
+	return s.db.PingContext(ctx)
+}

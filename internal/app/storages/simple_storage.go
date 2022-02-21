@@ -175,3 +175,7 @@ func (s *SimpleStorage) writeRecordToFile(record Record) error {
 func (s *SimpleStorage) PutRecords(ctx context.Context, records []BatchRecord) ([]BatchRecord, error) {
 	return nil, fmt.Errorf("method has not implemented")
 }
+
+func (s *SimpleStorage) Ping(ctx context.Context) error {
+	return nil
+}

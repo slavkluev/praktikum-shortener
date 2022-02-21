@@ -76,7 +76,7 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 			},
 			want: want{
 				contentType: "text/plain; charset=utf-8",
-				statusCode:  500,
+				statusCode:  404,
 				redirectURL: "",
 			},
 			path: "/1009",
@@ -113,7 +113,7 @@ func TestHandler_GetOriginalUrl(t *testing.T) {
 				middlewares.GzipEncoder{},
 				middlewares.GzipDecoder{},
 				middlewares.NewAuthenticator([]byte("secret key")),
-			}, nil)
+			})
 			ts := httptest.NewServer(handler)
 			defer ts.Close()
 

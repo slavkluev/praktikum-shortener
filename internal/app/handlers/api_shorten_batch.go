@@ -22,19 +22,19 @@ func (h *Handler) APIShortenBatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		var batchRequests []BatchRequest
 		if err := json.Unmarshal(b, &batchRequests); err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
 
 		userCookie, err := r.Cookie("user_id")
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -49,7 +49,7 @@ func (h *Handler) APIShortenBatch() http.HandlerFunc {
 
 		batchRecords, err = h.Storage.PutRecords(r.Context(), batchRecords)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -63,12 +63,12 @@ func (h *Handler) APIShortenBatch() http.HandlerFunc {
 
 		res, err := json.Marshal(batchResponses)
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(201)
+		w.WriteHeader(http.StatusCreated)
 		w.Write(res)
 	}
 }

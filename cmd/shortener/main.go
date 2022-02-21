@@ -42,7 +42,7 @@ func main() {
 		middlewares.NewAuthenticator([]byte("secret key")),
 	}
 
-	handler := handlers.NewHandler(storage, cfg.BaseURL, mws, db)
+	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
 		Handler: handler,

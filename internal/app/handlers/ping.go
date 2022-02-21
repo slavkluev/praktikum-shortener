@@ -6,11 +6,11 @@ import (
 
 func (h *Handler) Ping() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if err := h.DB.Ping(); err != nil {
-			http.Error(w, err.Error(), 500)
+		if err := h.Storage.Ping(r.Context()); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		w.WriteHeader(200)
+		w.WriteHeader(http.StatusOK)
 	}
 }

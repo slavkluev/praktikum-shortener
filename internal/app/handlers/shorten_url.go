@@ -13,16 +13,14 @@ import (
 func (h *Handler) ShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
-
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		userCookie, err := r.Cookie("user_id")
-
 		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
@@ -32,30 +30,30 @@ func (h *Handler) ShortenURL() http.HandlerFunc {
 			URL:  url,
 		})
 
-		var pge *pgconn.PgError
-		if err != nil && errors.As(err, &pge) && pge.Code == pgerrcode.UniqueViolation {
-			record, err := h.Storage.GetByOriginURL(r.Context(), url)
-			if err != nil {
-				http.Error(w, err.Error(), 500)
+		if err != nil {
+			var pge *pgconn.PgError
+			if errors.As(err, &pge) && pge.Code == pgerrcode.UniqueViolation {
+				record, err := h.Storage.GetByOriginURL(r.Context(), url)
+				if err != nil {
+					http.Error(w, err.Error(), http.StatusInternalServerError)
+					return
+				}
+
+				resultURL := h.BaseURL + "/" + strconv.FormatUint(record.ID, 10)
+				w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+				w.WriteHeader(http.StatusConflict)
+				w.Write([]byte(resultURL))
 				return
 			}
 
-			resultURL := h.BaseURL + "/" + strconv.FormatUint(record.ID, 10)
-			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-			w.WriteHeader(409)
-			w.Write([]byte(resultURL))
-			return
-		}
-
-		if err != nil {
-			http.Error(w, err.Error(), 500)
+			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		resultURL := h.BaseURL + "/" + strconv.FormatUint(id, 10)
 
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(201)
+		w.WriteHeader(http.StatusCreated)
 		w.Write([]byte(resultURL))
 	}
 }
