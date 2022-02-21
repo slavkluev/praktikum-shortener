@@ -49,28 +49,24 @@ func (h *Handler) DeleteUrls() http.HandlerFunc {
 			_ = h.Storage.DeleteRecords(r.Context(), idsToDelete)
 		}()
 
-		go func() {
-			wg := &sync.WaitGroup{}
-			for _, id := range ids {
-				wg.Add(1)
-				go func(id uint64) {
-					record, err := h.Storage.Get(r.Context(), id)
-					if err != nil {
-						wg.Done()
-						return
-					}
+		wg := &sync.WaitGroup{}
+		for _, id := range ids {
+			wg.Add(1)
+			go func(id uint64) {
+				defer wg.Done()
+				record, err := h.Storage.Get(r.Context(), id)
+				if err != nil {
+					return
+				}
 
-					if record.User == userCookie.Value {
-						outCh <- id
-					}
-					wg.Done()
-				}(id)
-			}
-
-			wg.Wait()
-			close(outCh)
-		}()
+				if record.User == userCookie.Value {
+					outCh <- id
+				}
+			}(id)
+		}
 
 		w.WriteHeader(http.StatusAccepted)
+		wg.Wait()
+		close(outCh)
 	}
 }
