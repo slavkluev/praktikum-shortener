@@ -3,7 +3,13 @@ package storages
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 )
+
+var ErrDeleted = errors.New("deleted")
 
 type DatabaseStorage struct {
 	db *sql.DB
@@ -23,18 +29,23 @@ func CreateDatabaseStorage(db *sql.DB) (*DatabaseStorage, error) {
 }
 
 func (s *DatabaseStorage) init() error {
-	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS url ( id bigserial primary key, user_id varchar(36), origin_url varchar(255), CONSTRAINT origin_url_unique UNIQUE (origin_url) )")
+	_, err := s.db.Exec("CREATE TABLE IF NOT EXISTS url ( id bigserial primary key, user_id varchar(36), origin_url varchar(255), deleted boolean default false, CONSTRAINT origin_url_unique UNIQUE (origin_url) )")
 
 	return err
 }
 
 func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	var record Record
+	var deleted bool
 
-	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE id = $1", id)
-	err := row.Scan(&record.ID, &record.User, &record.URL)
+	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url, deleted FROM url WHERE id = $1", id)
+	err := row.Scan(&record.ID, &record.User, &record.URL, &deleted)
 	if err != nil {
 		return Record{}, err
+	}
+
+	if deleted {
+		return Record{}, ErrDeleted
 	}
 
 	return record, nil
@@ -43,7 +54,7 @@ func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 func (s *DatabaseStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
 	var record Record
 
-	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE origin_url = $1", originURL)
+	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE origin_url = $1 AND deleted = false", originURL)
 	err := row.Scan(&record.ID, &record.User, &record.URL)
 	if err != nil {
 		return Record{}, err
@@ -55,7 +66,7 @@ func (s *DatabaseStorage) GetByOriginURL(ctx context.Context, originURL string) 
 func (s *DatabaseStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
 	records := make([]Record, 0)
 
-	rows, err := s.db.QueryContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE user_id = $1", userID)
+	rows, err := s.db.QueryContext(ctx, "SELECT id, user_id, origin_url FROM url WHERE user_id = $1 AND deleted = false", userID)
 	if err != nil {
 		return nil, err
 	}
@@ -122,4 +133,20 @@ func (s *DatabaseStorage) PutRecords(ctx context.Context, records []BatchRecord)
 
 func (s *DatabaseStorage) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
+}
+
+func (s *DatabaseStorage) DeleteRecords(ctx context.Context, ids []uint64) error {
+	var strIds []string
+	for _, id := range ids {
+		strIds = append(strIds, strconv.FormatUint(id, 10))
+	}
+
+	if len(strIds) == 0 {
+		return nil
+	}
+
+	stmt := fmt.Sprintf("UPDATE url set deleted = true WHERE id IN (%s)", strings.Join(strIds, ","))
+	_, err := s.db.Exec(stmt)
+
+	return err
 }
