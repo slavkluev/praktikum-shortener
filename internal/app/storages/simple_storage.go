@@ -177,5 +177,9 @@ func (s *SimpleStorage) PutRecords(ctx context.Context, records []BatchRecord) (
 }
 
 func (s *SimpleStorage) Ping(ctx context.Context) error {
-	return nil
+	return fmt.Errorf("method has not implemented")
+}
+
+func (s *SimpleStorage) DeleteRecords(ctx context.Context, ids []uint64) error {
+	return fmt.Errorf("method has not implemented")
 }

@@ -14,6 +14,7 @@ type Storage interface {
 	Put(ctx context.Context, record storages.Record) (uint64, error)
 	PutRecords(ctx context.Context, records []storages.BatchRecord) ([]storages.BatchRecord, error)
 	Ping(ctx context.Context) error
+	DeleteRecords(ctx context.Context, ids []uint64) error
 }
 
 type Middleware interface {
@@ -36,6 +37,7 @@ func NewHandler(storage Storage, baseURL string, middlewares []Middleware) *Hand
 	h.Get("/ping", applyMiddlewares(h.Ping(), middlewares))
 	h.Get("/{id}", applyMiddlewares(h.GetOriginalURL(), middlewares))
 	h.Get("/api/user/urls", applyMiddlewares(h.GetAllUrls(), middlewares))
+	h.Delete("/api/user/urls", applyMiddlewares(h.DeleteUrls(), middlewares))
 	h.Post("/", applyMiddlewares(h.ShortenURL(), middlewares))
 	h.Post("/api/shorten", applyMiddlewares(h.APIShortenURL(), middlewares))
 	h.Post("/api/shorten/batch", applyMiddlewares(h.APIShortenBatch(), middlewares))
