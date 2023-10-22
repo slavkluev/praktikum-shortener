@@ -3,7 +3,6 @@ package handlers
 import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"github.com/stretchr/testify/assert"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +12,7 @@ import (
 )
 
 func TestHandler_GetOriginalUrl(t *testing.T) {
-	file, err := ioutil.TempFile("", "db")
+	file, err := os.CreateTemp("", "db")
 	if err != nil {
 		log.Fatal(err)
 	}
