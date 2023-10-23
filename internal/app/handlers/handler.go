@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"context"
-	"github.com/go-chi/chi/v5"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"net/http"
+
+	"github.com/go-chi/chi/v5"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 type Storage interface {

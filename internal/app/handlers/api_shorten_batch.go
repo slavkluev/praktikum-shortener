@@ -2,10 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 type BatchRequest struct {
