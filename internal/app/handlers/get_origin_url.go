@@ -1,9 +1,7 @@
 package handlers
 
 import (
-	"errors"
 	"github.com/go-chi/chi/v5"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"net/http"
 	"strconv"
 )
@@ -20,12 +18,12 @@ func (h *Handler) GetOriginalURL() http.HandlerFunc {
 
 		record, err := h.Storage.Get(r.Context(), id)
 
-		if err != nil {
-			if errors.Is(storages.ErrDeleted, err) {
-				http.Error(w, err.Error(), http.StatusGone)
-				return
-			}
+		if record.Deleted {
+			http.Error(w, "Gone", http.StatusGone)
+			return
+		}
 
+		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotFound)
 			return
 		}

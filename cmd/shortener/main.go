@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	"flag"
 	"github.com/caarlos0/env/v6"
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -10,30 +12,45 @@ import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"log"
 	"net/http"
-	"os"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
+const shutdownTimeout = 5 * time.Second
+
 type Config struct {
-	ServerAddress   string `env:"SERVER_ADDRESS"`
-	BaseURL         string `env:"BASE_URL"`
-	FileStoragePath string `env:"FILE_STORAGE_PATH"`
-	DatabaseDSN     string `env:"DATABASE_DSN"`
+	ServerAddress       string `env:"SERVER_ADDRESS"`
+	BaseURL             string `env:"BASE_URL"`
+	FileStoragePath     string `env:"FILE_STORAGE_PATH"`
+	FileStorageSyncTime int    `env:"FILE_STORAGE_SYNC_TIME"`
+	DatabaseDSN         string `env:"DATABASE_DSN"`
 }
 
 func main() {
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	defer stop()
+
 	cfg := parseVariables()
 
-	db, err := sql.Open("pgx", cfg.DatabaseDSN)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	var storage handlers.Storage
+	var err error
+	if cfg.DatabaseDSN != "" {
+		db, err := sql.Open("pgx", cfg.DatabaseDSN)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer db.Close()
 
-	storage, err := storages.CreateDatabaseStorage(db)
-	if err != nil {
-		log.Fatal(err)
+		storage, err = storages.CreateDatabaseStorage(db)
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		storage, err = storages.CreateSimpleStorage(cfg.FileStoragePath, cfg.FileStorageSyncTime)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	mws := []handlers.Middleware{
@@ -48,26 +65,45 @@ func main() {
 		Handler: handler,
 	}
 
-	c := make(chan os.Signal, 1)
-	signal.Notify(c,
-		syscall.SIGHUP,
-		syscall.SIGINT,
-		syscall.SIGTERM,
-		syscall.SIGQUIT)
-
 	go func() {
-		<-c
-		server.Close()
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("listen and serve: %v", err)
+		}
 	}()
 
-	log.Fatal(server.ListenAndServe())
+	log.Printf("listening on %s", cfg.ServerAddress)
+	<-ctx.Done()
+
+	log.Println("shutting down server gracefully")
+
+	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+
+	if err := server.Shutdown(shutdownCtx); err != nil {
+		log.Fatal(err)
+	}
+
+	longShutdown := make(chan struct{}, 1)
+
+	go func() {
+		time.Sleep(3 * time.Second)
+		longShutdown <- struct{}{}
+	}()
+
+	select {
+	case <-shutdownCtx.Done():
+		log.Fatal(err)
+	case <-longShutdown:
+		log.Println("finished")
+	}
 }
 
 func parseVariables() Config {
 	var cfg = Config{
-		ServerAddress:   "localhost:8080",
-		BaseURL:         "http://localhost:8080",
-		FileStoragePath: "db.txt",
+		ServerAddress:       "localhost:8080",
+		BaseURL:             "http://localhost:8080",
+		FileStoragePath:     "db.txt",
+		FileStorageSyncTime: 5,
 	}
 
 	err := env.Parse(&cfg)
@@ -78,6 +114,7 @@ func parseVariables() Config {
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
 	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
+	flag.IntVar(&cfg.FileStorageSyncTime, "t", cfg.FileStorageSyncTime, "File storage sync time")
 	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database DSN")
 	flag.Parse()
 

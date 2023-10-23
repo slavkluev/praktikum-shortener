@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -16,6 +17,7 @@ type SimpleStorage struct {
 	File    *os.File
 	ticker  *time.Ticker
 	done    chan bool
+	mu      sync.Mutex
 }
 
 func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) {
@@ -30,7 +32,7 @@ func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) 
 		return nil, err
 	}
 
-	ticker := time.NewTicker(time.Duration(syncTime) * time.Minute)
+	ticker := time.NewTicker(time.Duration(syncTime) * time.Second)
 	done := make(chan bool)
 	simpleStorage := &SimpleStorage{
 		Start:   lastID + 1,
@@ -91,8 +93,11 @@ func (s *SimpleStorage) Get(ctx context.Context, id uint64) (Record, error) {
 }
 
 func (s *SimpleStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	for _, record := range s.Records {
-		if record.URL == originURL {
+		if record.URL == originURL && !record.Deleted {
 			return record, nil
 		}
 	}
@@ -101,22 +106,24 @@ func (s *SimpleStorage) GetByOriginURL(ctx context.Context, originURL string) (R
 }
 
 func (s *SimpleStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	records := make([]Record, 0)
 
 	for _, record := range s.Records {
-		if record.User == userID {
+		if record.User == userID && !record.Deleted {
 			records = append(records, record)
 		}
-	}
-
-	if len(records) == 0 {
-		return nil, fmt.Errorf("records with user_id %s have not found", userID)
 	}
 
 	return records, nil
 }
 
 func (s *SimpleStorage) Put(ctx context.Context, record Record) (uint64, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	record.ID = s.Start
 	s.Start++
 
@@ -138,6 +145,9 @@ func (s *SimpleStorage) Close() error {
 }
 
 func (s *SimpleStorage) updateDataFile() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	err := s.File.Truncate(0)
 	if err != nil {
 		return err
@@ -181,5 +191,17 @@ func (s *SimpleStorage) Ping(ctx context.Context) error {
 }
 
 func (s *SimpleStorage) DeleteRecords(ctx context.Context, ids []uint64) error {
-	return fmt.Errorf("method has not implemented")
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for _, id := range ids {
+		if record, ok := s.Records[id]; ok {
+			record.Deleted = true
+			s.Records[record.ID] = record
+		} else {
+			return fmt.Errorf("id %d have not found", id)
+		}
+	}
+
+	return nil
 }

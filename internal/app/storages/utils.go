@@ -1,9 +1,10 @@
 package storages
 
 type Record struct {
-	ID   uint64
-	User string
-	URL  string
+	ID      uint64
+	User    string
+	URL     string
+	Deleted bool
 }
 
 type BatchRecord struct {

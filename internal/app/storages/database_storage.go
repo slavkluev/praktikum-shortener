@@ -36,16 +36,11 @@ func (s *DatabaseStorage) init() error {
 
 func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	var record Record
-	var deleted bool
 
 	row := s.db.QueryRowContext(ctx, "SELECT id, user_id, origin_url, deleted FROM url WHERE id = $1", id)
-	err := row.Scan(&record.ID, &record.User, &record.URL, &deleted)
+	err := row.Scan(&record.ID, &record.User, &record.URL, &record.Deleted)
 	if err != nil {
 		return Record{}, err
-	}
-
-	if deleted {
-		return Record{}, ErrDeleted
 	}
 
 	return record, nil
