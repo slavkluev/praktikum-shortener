@@ -2,6 +2,7 @@ package storages
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -158,26 +159,19 @@ func (s *SimpleStorage) updateDataFile() error {
 		return err
 	}
 
+	buf := bytes.Buffer{}
 	for _, record := range s.Records {
-		err := s.writeRecordToFile(record)
+		data, err := json.Marshal(record)
 
 		if err != nil {
 			return err
 		}
+
+		buf.Write(data)
+		buf.WriteRune('\n')
 	}
 
-	return nil
-}
-
-func (s *SimpleStorage) writeRecordToFile(record Record) error {
-	data, err := json.Marshal(record)
-
-	if err != nil {
-		return err
-	}
-
-	data = append(data, '\n')
-	_, err = s.File.Write(data)
+	_, err = s.File.Write(buf.Bytes())
 
 	return err
 }
