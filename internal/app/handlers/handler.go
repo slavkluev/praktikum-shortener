@@ -9,6 +9,7 @@ import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
+// Storage интерфейс хранилища
 type Storage interface {
 	Get(ctx context.Context, id uint64) (storages.Record, error)
 	GetByOriginURL(ctx context.Context, originURL string) (storages.Record, error)
@@ -19,16 +20,19 @@ type Storage interface {
 	DeleteRecords(ctx context.Context, ids []uint64) error
 }
 
+// Middleware интерфейс посредника
 type Middleware interface {
 	Handle(next http.HandlerFunc) http.HandlerFunc
 }
 
+// Handler обработчик эндпоинта
 type Handler struct {
 	*chi.Mux
 	Storage Storage
 	BaseURL string
 }
 
+// NewHandler создание нового обработчика
 func NewHandler(storage Storage, baseURL string, middlewares []Middleware) *Handler {
 	h := &Handler{
 		Mux:     chi.NewMux(),

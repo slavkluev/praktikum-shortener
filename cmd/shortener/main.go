@@ -21,6 +21,7 @@ import (
 
 const shutdownTimeout = 5 * time.Second
 
+// Config хранит конфигурацию сервиса
 type Config struct {
 	ServerAddress       string `env:"SERVER_ADDRESS"`
 	BaseURL             string `env:"BASE_URL"`

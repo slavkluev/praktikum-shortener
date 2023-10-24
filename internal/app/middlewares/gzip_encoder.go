@@ -12,12 +12,15 @@ type gzipWriter struct {
 	Writer io.Writer
 }
 
+// Write ревлизация интерфейса
 func (w gzipWriter) Write(b []byte) (int, error) {
 	return w.Writer.Write(b)
 }
 
+// GzipEncoder является Middleware для зашифровки Gzip
 type GzipEncoder struct{}
 
+// Handle обработка Middleware
 func (g GzipEncoder) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {

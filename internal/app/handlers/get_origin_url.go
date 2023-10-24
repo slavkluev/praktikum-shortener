@@ -7,6 +7,7 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// GetOriginalURL используется для получения оригинального URL по ID
 func (h *Handler) GetOriginalURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rawID := chi.URLParam(r, "id")

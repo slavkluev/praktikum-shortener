@@ -10,14 +10,17 @@ import (
 	"github.com/google/uuid"
 )
 
+// Authenticator является Middleware для аутентификации пользователя
 type Authenticator struct {
 	secret []byte
 }
 
+// NewAuthenticator создание нового Authenticator
 func NewAuthenticator(secret []byte) *Authenticator {
 	return &Authenticator{secret: secret}
 }
 
+// Handle обработка Middleware
 func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userCookie, userErr := r.Cookie("user_id")

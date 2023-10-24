@@ -13,14 +13,17 @@ import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
+// Request запрос на сокращение
 type Request struct {
 	URL string `json:"url"`
 }
 
+// Response ответ на запрос на сокращение
 type Response struct {
 	Result string `json:"result"`
 }
 
+// APIShortenURL используется для сокращения длинных URL до нескольких символов
 func (h *Handler) APIShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)

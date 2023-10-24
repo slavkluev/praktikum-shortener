@@ -3,18 +3,17 @@ package storages
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-var ErrDeleted = errors.New("deleted")
-
+// DatabaseStorage хранилище, использующее базу данных
 type DatabaseStorage struct {
 	db *sql.DB
 }
 
+// CreateDatabaseStorage создание DatabaseStorage
 func CreateDatabaseStorage(db *sql.DB) (*DatabaseStorage, error) {
 	databaseStorage := &DatabaseStorage{
 		db: db,
@@ -34,6 +33,7 @@ func (s *DatabaseStorage) init() error {
 	return err
 }
 
+// Get получение записи по ID
 func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	var record Record
 
@@ -46,6 +46,7 @@ func (s *DatabaseStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	return record, nil
 }
 
+// GetByOriginURL получение записи по оригинальному URL
 func (s *DatabaseStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
 	var record Record
 
@@ -58,6 +59,7 @@ func (s *DatabaseStorage) GetByOriginURL(ctx context.Context, originURL string) 
 	return record, nil
 }
 
+// GetByUser получение всех записей у пользователя
 func (s *DatabaseStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
 	records := make([]Record, 0)
 
@@ -86,6 +88,7 @@ func (s *DatabaseStorage) GetByUser(ctx context.Context, userID string) ([]Recor
 	return records, nil
 }
 
+// Put вставка одной записи
 func (s *DatabaseStorage) Put(ctx context.Context, record Record) (uint64, error) {
 	var id uint64
 
@@ -98,6 +101,7 @@ func (s *DatabaseStorage) Put(ctx context.Context, record Record) (uint64, error
 	return id, nil
 }
 
+// PutRecords вставка множества записей
 func (s *DatabaseStorage) PutRecords(ctx context.Context, records []BatchRecord) ([]BatchRecord, error) {
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -126,10 +130,12 @@ func (s *DatabaseStorage) PutRecords(ctx context.Context, records []BatchRecord)
 	return records, nil
 }
 
+// Ping проверка доступности хранилища
 func (s *DatabaseStorage) Ping(ctx context.Context) error {
 	return s.db.PingContext(ctx)
 }
 
+// DeleteRecords удаление нескольких записей
 func (s *DatabaseStorage) DeleteRecords(ctx context.Context, ids []uint64) error {
 	var strIds []string
 	for _, id := range ids {

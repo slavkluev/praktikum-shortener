@@ -12,6 +12,7 @@ import (
 	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
+// ShortenURL используется для сокращения длинных URL до нескольких символов
 func (h *Handler) ShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)
