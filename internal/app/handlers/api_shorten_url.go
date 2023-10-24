@@ -3,12 +3,14 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 type Request struct {

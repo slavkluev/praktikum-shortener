@@ -5,16 +5,18 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
-	"github.com/caarlos0/env/v6"
-	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
-	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"log"
 	"net/http"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/caarlos0/env/v6"
+	_ "github.com/jackc/pgx/v4/stdlib"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
+	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 const shutdownTimeout = 5 * time.Second

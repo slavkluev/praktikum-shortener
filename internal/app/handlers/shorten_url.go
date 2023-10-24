@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"errors"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 func (h *Handler) ShortenURL() http.HandlerFunc {

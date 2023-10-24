@@ -1,15 +1,17 @@
 package handlers
 
 import (
-	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
-	"github.com/stretchr/testify/assert"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
 func TestHandler_ShortenUrl(t *testing.T) {
