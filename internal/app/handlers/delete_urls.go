@@ -8,6 +8,7 @@ import (
 	"sync"
 )
 
+// DeleteUrls используется для удаления сокращенных URL
 func (h *Handler) DeleteUrls() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)

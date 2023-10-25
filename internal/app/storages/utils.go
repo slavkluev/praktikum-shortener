@@ -1,5 +1,6 @@
 package storages
 
+// Record хранит данные оригинального URL
 type Record struct {
 	ID      uint64
 	User    string
@@ -7,6 +8,7 @@ type Record struct {
 	Deleted bool
 }
 
+// BatchRecord хранит данные оригинального URL, используемого при множественном сокращении
 type BatchRecord struct {
 	ID            uint64
 	User          string

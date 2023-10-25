@@ -2,22 +2,26 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
+// BatchRequest хранит данные одного элемента в запросе на сокращение
 type BatchRequest struct {
 	CorrelationID string `json:"correlation_id"`
 	OriginURL     string `json:"original_url"`
 }
 
+// BatchResponse хранит данные одного элемента в ответе на запрос
 type BatchResponse struct {
 	CorrelationID string `json:"correlation_id"`
 	ShortURL      string `json:"short_url"`
 }
 
+// APIShortenBatch используется для множественного сокращения длинных URL до нескольких символов
 func (h *Handler) APIShortenBatch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)

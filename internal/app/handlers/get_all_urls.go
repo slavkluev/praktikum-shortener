@@ -6,11 +6,13 @@ import (
 	"strconv"
 )
 
+// ShortenURL хранит связь сокращенного URL и оригинального URL
 type ShortenURL struct {
 	ShortURL    string `json:"short_url"`
 	OriginalURL string `json:"original_url"`
 }
 
+// GetAllUrls используется для получения всех сокращенных URL у пользователя
 func (h *Handler) GetAllUrls() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		userCookie, err := r.Cookie("user_id")

@@ -2,14 +2,17 @@ package handlers
 
 import (
 	"errors"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgerrcode"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 	"io"
 	"net/http"
 	"strconv"
+
+	"github.com/jackc/pgconn"
+	"github.com/jackc/pgerrcode"
+
+	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
 )
 
+// ShortenURL используется для сокращения длинных URL до нескольких символов
 func (h *Handler) ShortenURL() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		b, err := io.ReadAll(r.Body)

@@ -2,6 +2,7 @@ package storages
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"time"
 )
 
+// SimpleStorage хранилище, использующее файл
 type SimpleStorage struct {
 	Start   uint64
 	Records map[uint64]Record
@@ -20,6 +22,7 @@ type SimpleStorage struct {
 	mu      sync.Mutex
 }
 
+// CreateSimpleStorage создание SimpleStorage
 func CreateSimpleStorage(filename string, syncTime int) (*SimpleStorage, error) {
 	file, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0777)
 
@@ -84,6 +87,7 @@ func (s *SimpleStorage) synchronize() {
 	}
 }
 
+// Get получение записи по ID
 func (s *SimpleStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	if record, ok := s.Records[id]; ok {
 		return record, nil
@@ -92,6 +96,7 @@ func (s *SimpleStorage) Get(ctx context.Context, id uint64) (Record, error) {
 	return Record{}, fmt.Errorf("id %d have not found", id)
 }
 
+// GetByOriginURL получение записи по оригинальному URL
 func (s *SimpleStorage) GetByOriginURL(ctx context.Context, originURL string) (Record, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -105,6 +110,7 @@ func (s *SimpleStorage) GetByOriginURL(ctx context.Context, originURL string) (R
 	return Record{}, fmt.Errorf("originURL %s have not found", originURL)
 }
 
+// GetByUser получение всех записей у пользователя
 func (s *SimpleStorage) GetByUser(ctx context.Context, userID string) ([]Record, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -120,6 +126,7 @@ func (s *SimpleStorage) GetByUser(ctx context.Context, userID string) ([]Record,
 	return records, nil
 }
 
+// Put вставка одной записи
 func (s *SimpleStorage) Put(ctx context.Context, record Record) (uint64, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -132,6 +139,7 @@ func (s *SimpleStorage) Put(ctx context.Context, record Record) (uint64, error) 
 	return record.ID, nil
 }
 
+// Close закрытие файлового хранилища
 func (s *SimpleStorage) Close() error {
 	s.ticker.Stop()
 	s.done <- true
@@ -158,38 +166,34 @@ func (s *SimpleStorage) updateDataFile() error {
 		return err
 	}
 
+	buf := bytes.Buffer{}
 	for _, record := range s.Records {
-		err := s.writeRecordToFile(record)
+		data, err := json.Marshal(record)
 
 		if err != nil {
 			return err
 		}
+
+		buf.Write(data)
+		buf.WriteRune('\n')
 	}
 
-	return nil
-}
-
-func (s *SimpleStorage) writeRecordToFile(record Record) error {
-	data, err := json.Marshal(record)
-
-	if err != nil {
-		return err
-	}
-
-	data = append(data, '\n')
-	_, err = s.File.Write(data)
+	_, err = s.File.Write(buf.Bytes())
 
 	return err
 }
 
+// PutRecords вставка множества записей
 func (s *SimpleStorage) PutRecords(ctx context.Context, records []BatchRecord) ([]BatchRecord, error) {
 	return nil, fmt.Errorf("method has not implemented")
 }
 
+// Ping проверка доступности хранилища
 func (s *SimpleStorage) Ping(ctx context.Context) error {
 	return fmt.Errorf("method has not implemented")
 }
 
+// DeleteRecords удаление нескольких записей
 func (s *SimpleStorage) DeleteRecords(ctx context.Context, ids []uint64) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

@@ -7,8 +7,10 @@ import (
 	"strings"
 )
 
+// GzipDecoder является Middleware для расшифровки Gzip
 type GzipDecoder struct{}
 
+// Handle обработка Middleware
 func (g GzipDecoder) Handle(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if !strings.Contains(r.Header.Get("Content-Encoding"), "gzip") {
