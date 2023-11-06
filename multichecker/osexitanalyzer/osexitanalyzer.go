@@ -8,10 +8,11 @@ import (
 )
 
 const (
-	PackageMain  = "main"
-	FunctionMain = "main"
+	packageMain  = "main"
+	functionMain = "main"
 )
 
+// OsExitAnalyzer анализатор, который запрещает использовать прямой вызов os.Exit в функции main пакета main
 var OsExitAnalyzer = &analysis.Analyzer{
 	Name: "osexitanalyzer",
 	Doc:  "check for os.Exit is in main function",
@@ -20,14 +21,14 @@ var OsExitAnalyzer = &analysis.Analyzer{
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	for _, file := range pass.Files {
-		if file.Name.Name != PackageMain {
+		if file.Name.Name != packageMain {
 			continue
 		}
 
 		ast.Inspect(file, func(node ast.Node) bool {
 			switch x := node.(type) {
 			case *ast.FuncDecl:
-				if x.Name.Name != FunctionMain {
+				if x.Name.Name != functionMain {
 					return false
 				}
 			case *ast.CallExpr:
