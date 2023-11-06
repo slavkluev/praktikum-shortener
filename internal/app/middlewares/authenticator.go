@@ -1,3 +1,4 @@
+// Package middlewares содержит Middlewares
 package middlewares
 
 import (

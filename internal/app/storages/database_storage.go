@@ -1,3 +1,4 @@
+// Package storages содержит доступные хранилища
 package storages
 
 import (
