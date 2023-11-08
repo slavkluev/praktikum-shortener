@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"flag"
+	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
@@ -21,6 +22,12 @@ import (
 
 const shutdownTimeout = 5 * time.Second
 
+var (
+	buildVersion = "N/A"
+	buildDate    = "N/A"
+	buildCommit  = "N/A"
+)
+
 // Config хранит конфигурацию сервиса
 type Config struct {
 	ServerAddress       string `env:"SERVER_ADDRESS"`
@@ -31,6 +38,8 @@ type Config struct {
 }
 
 func main() {
+	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n\n", buildVersion, buildDate, buildCommit)
+
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
