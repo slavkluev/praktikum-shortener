@@ -35,6 +35,9 @@ type Config struct {
 	FileStoragePath     string `env:"FILE_STORAGE_PATH"`
 	FileStorageSyncTime int    `env:"FILE_STORAGE_SYNC_TIME"`
 	DatabaseDSN         string `env:"DATABASE_DSN"`
+	EnableHTTPS         bool   `env:"ENABLE_HTTPS"`
+	CertFile            string `env:"CERT_FILE"`
+	KeyFile             string `env:"KEY_FILE"`
 }
 
 func main() {
@@ -77,11 +80,19 @@ func main() {
 		Handler: handler,
 	}
 
-	go func() {
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("listen and serve: %v", err)
+	go func(cfg Config) {
+		if cfg.EnableHTTPS {
+			err := server.ListenAndServeTLS(cfg.CertFile, cfg.KeyFile)
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("listen and serve tls: %v", err)
+			}
+		} else {
+			err := server.ListenAndServe()
+			if err != nil && !errors.Is(err, http.ErrServerClosed) {
+				log.Fatalf("listen and serve: %v", err)
+			}
 		}
-	}()
+	}(cfg)
 
 	log.Printf("listening on %s", cfg.ServerAddress)
 	<-ctx.Done()
@@ -116,6 +127,8 @@ func parseVariables() Config {
 		BaseURL:             "http://localhost:8080",
 		FileStoragePath:     "db.txt",
 		FileStorageSyncTime: 5,
+		CertFile:            "server.pem",
+		KeyFile:             "server.key",
 	}
 
 	err := env.Parse(&cfg)
@@ -128,6 +141,9 @@ func parseVariables() Config {
 	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
 	flag.IntVar(&cfg.FileStorageSyncTime, "t", cfg.FileStorageSyncTime, "File storage sync time")
 	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database DSN")
+	flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "Enable HTTPS")
+	flag.StringVar(&cfg.CertFile, "c", cfg.CertFile, "Cert file")
+	flag.StringVar(&cfg.KeyFile, "k", cfg.KeyFile, "Key file")
 	flag.Parse()
 
 	return cfg
