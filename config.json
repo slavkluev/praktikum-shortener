@@ -1,0 +1,10 @@
+{
+  "server_address": "localhost:8080",
+  "base_url": "http://localhost:8080",
+  "file_storage_path": "db.txt",
+  "file_storage_sync_time": 5,
+  "database_dsn": "",
+  "enable_https": false,
+  "cert_file": "server.pem",
+  "key_file": "server.key"
+}

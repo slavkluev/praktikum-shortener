@@ -4,16 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
-	"github.com/caarlos0/env/v6"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 
 	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
 	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
@@ -30,26 +32,63 @@ var (
 
 // Config хранит конфигурацию сервиса
 type Config struct {
-	ServerAddress       string `env:"SERVER_ADDRESS"`
-	BaseURL             string `env:"BASE_URL"`
-	FileStoragePath     string `env:"FILE_STORAGE_PATH"`
-	FileStorageSyncTime int    `env:"FILE_STORAGE_SYNC_TIME"`
-	DatabaseDSN         string `env:"DATABASE_DSN"`
-	EnableHTTPS         bool   `env:"ENABLE_HTTPS"`
-	CertFile            string `env:"CERT_FILE"`
-	KeyFile             string `env:"KEY_FILE"`
+	ServerAddress       string `mapstructure:"server_address"`
+	BaseURL             string `mapstructure:"base_url"`
+	FileStoragePath     string `mapstructure:"file_storage_path"`
+	FileStorageSyncTime int    `mapstructure:"file_storage_sync_time"`
+	DatabaseDSN         string `mapstructure:"database_dsn"`
+	EnableHTTPS         bool   `mapstructure:"enable_https"`
+	CertFile            string `mapstructure:"cert_file"`
+	KeyFile             string `mapstructure:"key_file"`
+}
+
+func initializeViper() error {
+	viper.AutomaticEnv()
+
+	pflag.StringP("config", "c", "config.json", "Config path")
+	pflag.StringP("server_address", "a", "localhost:8080", "Server address")
+	pflag.StringP("base_url", "b", "http://localhost:8080", "Base URL")
+	pflag.StringP("file_storage_path", "f", "db.txt", "File storage path")
+	pflag.IntP("file_storage_sync_time", "t", 5, "File storage sync time")
+	pflag.StringP("database_dsn", "d", "", "Database DSN")
+	pflag.BoolP("enable_https", "s", false, "Enable HTTPS")
+	pflag.StringP("cert_file", "", "server.pem", "Cert file")
+	pflag.StringP("key_file", "", "server.key", "Key file")
+
+	pflag.Parse()
+	err := viper.BindPFlags(pflag.CommandLine)
+	if err != nil {
+		return err
+	}
+
+	path := viper.GetString("config")
+	base := strings.Split(filepath.Base(path), ".")
+
+	viper.SetConfigName(base[0])
+	viper.SetConfigType(base[1])
+	viper.AddConfigPath(filepath.Dir(path))
+
+	return viper.ReadInConfig()
 }
 
 func main() {
+	err := initializeViper()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	cfg := &Config{}
+	err = viper.Unmarshal(cfg)
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n\n", buildVersion, buildDate, buildCommit)
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	cfg := parseVariables()
-
 	var storage handlers.Storage
-	var err error
 	if cfg.DatabaseDSN != "" {
 		db, err := sql.Open("pgx", cfg.DatabaseDSN)
 		if err != nil {
@@ -92,7 +131,7 @@ func main() {
 				log.Fatalf("listen and serve: %v", err)
 			}
 		}
-	}(cfg)
+	}(*cfg)
 
 	log.Printf("listening on %s", cfg.ServerAddress)
 	<-ctx.Done()
@@ -119,32 +158,4 @@ func main() {
 	case <-longShutdown:
 		log.Println("finished")
 	}
-}
-
-func parseVariables() Config {
-	var cfg = Config{
-		ServerAddress:       "localhost:8080",
-		BaseURL:             "http://localhost:8080",
-		FileStoragePath:     "db.txt",
-		FileStorageSyncTime: 5,
-		CertFile:            "server.pem",
-		KeyFile:             "server.key",
-	}
-
-	err := env.Parse(&cfg)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
-	flag.StringVar(&cfg.BaseURL, "b", cfg.BaseURL, "Base URL")
-	flag.StringVar(&cfg.FileStoragePath, "f", cfg.FileStoragePath, "File storage path")
-	flag.IntVar(&cfg.FileStorageSyncTime, "t", cfg.FileStorageSyncTime, "File storage sync time")
-	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database DSN")
-	flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "Enable HTTPS")
-	flag.StringVar(&cfg.CertFile, "c", cfg.CertFile, "Cert file")
-	flag.StringVar(&cfg.KeyFile, "k", cfg.KeyFile, "Key file")
-	flag.Parse()
-
-	return cfg
 }
