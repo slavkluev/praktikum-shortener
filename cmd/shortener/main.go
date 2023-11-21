@@ -46,7 +46,7 @@ type Config struct {
 func main() {
 	fmt.Printf("Build version: %s\nBuild date: %s\nBuild commit: %s\n\n", buildVersion, buildDate, buildCommit)
 
-	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
 	cfg, err := parseVariables()
@@ -107,23 +107,12 @@ func main() {
 	shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 	defer cancel()
 
-	if err := server.Shutdown(shutdownCtx); err != nil {
+	err = server.Shutdown(shutdownCtx)
+	if err != nil {
 		log.Fatal(err)
 	}
 
-	longShutdown := make(chan struct{}, 1)
-
-	go func() {
-		time.Sleep(3 * time.Second)
-		longShutdown <- struct{}{}
-	}()
-
-	select {
-	case <-shutdownCtx.Done():
-		log.Fatal(err)
-	case <-longShutdown:
-		log.Println("finished")
-	}
+	log.Println("finished")
 }
 
 func parseVariables() (*Config, error) {
