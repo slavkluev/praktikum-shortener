@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -30,14 +32,15 @@ var (
 
 // Config хранит конфигурацию сервиса
 type Config struct {
-	ServerAddress       string `env:"SERVER_ADDRESS"`
-	BaseURL             string `env:"BASE_URL"`
-	FileStoragePath     string `env:"FILE_STORAGE_PATH"`
-	FileStorageSyncTime int    `env:"FILE_STORAGE_SYNC_TIME"`
-	DatabaseDSN         string `env:"DATABASE_DSN"`
-	EnableHTTPS         bool   `env:"ENABLE_HTTPS"`
-	CertFile            string `env:"CERT_FILE"`
-	KeyFile             string `env:"KEY_FILE"`
+	ServerAddress       string `env:"SERVER_ADDRESS" json:"server_address"`
+	BaseURL             string `env:"BASE_URL" json:"base_url"`
+	FileStoragePath     string `env:"FILE_STORAGE_PATH" json:"file_storage_path"`
+	FileStorageSyncTime int    `env:"FILE_STORAGE_SYNC_TIME" json:"file_storage_sync_time"`
+	DatabaseDSN         string `env:"DATABASE_DSN" json:"database_dsn"`
+	EnableHTTPS         bool   `env:"ENABLE_HTTPS" json:"enable_https"`
+	CertFile            string `env:"CERT_FILE" json:"cert_file"`
+	KeyFile             string `env:"KEY_FILE" json:"key_file"`
+	Config              string `env:"CONFIG"`
 }
 
 func main() {
@@ -46,10 +49,12 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGHUP, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	cfg := parseVariables()
+	cfg, err := parseVariables()
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var storage handlers.Storage
-	var err error
 	if cfg.DatabaseDSN != "" {
 		db, err := sql.Open("pgx", cfg.DatabaseDSN)
 		if err != nil {
@@ -92,7 +97,7 @@ func main() {
 				log.Fatalf("listen and serve: %v", err)
 			}
 		}
-	}(cfg)
+	}(*cfg)
 
 	log.Printf("listening on %s", cfg.ServerAddress)
 	<-ctx.Done()
@@ -121,8 +126,8 @@ func main() {
 	}
 }
 
-func parseVariables() Config {
-	var cfg = Config{
+func parseVariables() (*Config, error) {
+	cfg := &Config{
 		ServerAddress:       "localhost:8080",
 		BaseURL:             "http://localhost:8080",
 		FileStoragePath:     "db.txt",
@@ -131,9 +136,17 @@ func parseVariables() Config {
 		KeyFile:             "server.key",
 	}
 
-	err := env.Parse(&cfg)
+	path := getConfigPath()
+	if path != "" {
+		err := loadConfigFromFile(cfg, path)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err := env.Parse(cfg)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
 	flag.StringVar(&cfg.ServerAddress, "a", cfg.ServerAddress, "Server address")
@@ -142,9 +155,32 @@ func parseVariables() Config {
 	flag.IntVar(&cfg.FileStorageSyncTime, "t", cfg.FileStorageSyncTime, "File storage sync time")
 	flag.StringVar(&cfg.DatabaseDSN, "d", cfg.DatabaseDSN, "Database DSN")
 	flag.BoolVar(&cfg.EnableHTTPS, "s", cfg.EnableHTTPS, "Enable HTTPS")
-	flag.StringVar(&cfg.CertFile, "c", cfg.CertFile, "Cert file")
-	flag.StringVar(&cfg.KeyFile, "k", cfg.KeyFile, "Key file")
+	flag.StringVar(&cfg.CertFile, "cert", cfg.CertFile, "Cert file")
+	flag.StringVar(&cfg.KeyFile, "key", cfg.KeyFile, "Key file")
+	flag.StringVar(&cfg.Config, "c", cfg.Config, "Config")
+	flag.StringVar(&cfg.Config, "config", cfg.Config, "Config")
 	flag.Parse()
 
-	return cfg
+	return cfg, nil
+}
+
+func getConfigPath() string {
+	path := os.Getenv("CONFIG")
+
+	for i := 1; i < len(os.Args); i += 2 {
+		if os.Args[i] == "-c" || os.Args[i] == "-config" {
+			path = os.Args[i+1]
+		}
+	}
+
+	return path
+}
+
+func loadConfigFromFile(cfg *Config, filename string) error {
+	bytes, err := os.ReadFile(filename)
+	if err != nil {
+		return err
+	}
+
+	return json.Unmarshal(bytes, cfg)
 }
