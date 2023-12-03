@@ -13,13 +13,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 
-	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
-	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
+	"github.com/slavkluev/praktikum-shortener/internal/app/domain"
+	httpDelivery "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http"
+	"github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http/middleware"
+	recordMemoryRepo "github.com/slavkluev/praktikum-shortener/internal/app/record/repository/memory"
+	recordPostgresRepo "github.com/slavkluev/praktikum-shortener/internal/app/record/repository/postgres"
+	recordUcase "github.com/slavkluev/praktikum-shortener/internal/app/record/usecase"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -88,7 +92,17 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	var storage handlers.Storage
+	router := chi.NewRouter()
+
+	authenticator := middleware.NewAuthenticator([]byte("secret key"))
+	gzipEncoder := middleware.GzipEncoder{}
+	gzipDecoder := middleware.GzipDecoder{}
+
+	router.Use(authenticator.Handle)
+	router.Use(gzipEncoder.Handle)
+	router.Use(gzipDecoder.Handle)
+
+	var recordRepository domain.RecordRepository
 	if cfg.DatabaseDSN != "" {
 		db, err := sql.Open("pgx", cfg.DatabaseDSN)
 		if err != nil {
@@ -96,27 +110,22 @@ func main() {
 		}
 		defer db.Close()
 
-		storage, err = storages.CreateDatabaseStorage(db)
+		recordRepository, err = recordPostgresRepo.NewPostgresRecordRepository(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		storage, err = storages.CreateSimpleStorage(cfg.FileStoragePath, cfg.FileStorageSyncTime)
-		if err != nil {
-			log.Fatal(err)
-		}
+		recordRepository = recordMemoryRepo.NewMemoryRecordRepository()
 	}
 
-	mws := []handlers.Middleware{
-		middlewares.GzipEncoder{},
-		middlewares.GzipDecoder{},
-		middlewares.NewAuthenticator([]byte("secret key")),
-	}
+	timeoutContext := time.Duration(5) * time.Second
+	recordUsecase := recordUcase.NewRecordUsecase(recordRepository, timeoutContext)
 
-	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)
+	httpDelivery.NewRecordHandler(cfg.BaseURL, router, recordUsecase)
+
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
-		Handler: handler,
+		Handler: router,
 	}
 
 	go func(cfg Config) {
