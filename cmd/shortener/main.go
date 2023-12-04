@@ -44,6 +44,7 @@ type Config struct {
 	EnableHTTPS         bool   `mapstructure:"enable_https"`
 	CertFile            string `mapstructure:"cert_file"`
 	KeyFile             string `mapstructure:"key_file"`
+	TrustedSubnet       string `mapstructure:"trusted_subnet"`
 }
 
 func initializeViper() error {
@@ -58,6 +59,7 @@ func initializeViper() error {
 	pflag.BoolP("enable_https", "s", false, "Enable HTTPS")
 	pflag.StringP("cert_file", "", "server.pem", "Cert file")
 	pflag.StringP("key_file", "", "server.key", "Key file")
+	pflag.StringP("trusted_subnet", "", "", "Trusted subnet")
 
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
@@ -97,6 +99,7 @@ func main() {
 	authenticator := middleware.NewAuthenticator([]byte("secret key"))
 	gzipEncoder := middleware.GzipEncoder{}
 	gzipDecoder := middleware.GzipDecoder{}
+	trustedSubnetChecker := middleware.NewTrustedSubnetChecker(cfg.TrustedSubnet)
 
 	router.Use(authenticator.Handle)
 	router.Use(gzipEncoder.Handle)
@@ -121,7 +124,7 @@ func main() {
 	timeoutContext := time.Duration(5) * time.Second
 	recordUsecase := recordUcase.NewRecordUsecase(recordRepository, timeoutContext)
 
-	httpDelivery.NewRecordHandler(cfg.BaseURL, router, recordUsecase)
+	httpDelivery.NewRecordHandler(cfg.BaseURL, router, recordUsecase, trustedSubnetChecker)
 
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,

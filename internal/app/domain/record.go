@@ -10,6 +10,12 @@ type Record struct {
 	Deleted bool
 }
 
+// Stats хранит статистические данные
+type Stats struct {
+	UrlsCount  uint64
+	UsersCount uint64
+}
+
 // RecordRepository интерфейс репозитория
 type RecordRepository interface {
 	Ping(ctx context.Context) error
@@ -18,6 +24,8 @@ type RecordRepository interface {
 	GetByUserID(ctx context.Context, userID string) ([]Record, error)
 	Store(ctx context.Context, record *Record) error
 	Delete(ctx context.Context, id uint64) error
+	GetUrlsCount(ctx context.Context) (uint64, error)
+	GetUsersCount(ctx context.Context) (uint64, error)
 }
 
 // RecordUsecase интерфейс usecase
@@ -29,4 +37,5 @@ type RecordUsecase interface {
 	StoreBatch(ctx context.Context, records []*Record) error
 	Delete(ctx context.Context, id uint64) error
 	DeleteBatch(ctx context.Context, ids []uint64) error
+	GetStatistic(ctx context.Context) (Stats, error)
 }

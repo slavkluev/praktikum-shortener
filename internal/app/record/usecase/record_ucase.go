@@ -117,3 +117,24 @@ func (r *recordUsecase) DeleteBatch(ctx context.Context, ids []uint64) error {
 
 	return grp.Wait()
 }
+
+// GetStatistic получение статистики
+func (r *recordUsecase) GetStatistic(ctx context.Context) (domain.Stats, error) {
+	ctx, cancel := context.WithTimeout(ctx, r.contextTimeout)
+	defer cancel()
+
+	urlsCount, err := r.recordRepo.GetUrlsCount(ctx)
+	if err != nil {
+		return domain.Stats{}, err
+	}
+
+	usersCount, err := r.recordRepo.GetUsersCount(ctx)
+	if err != nil {
+		return domain.Stats{}, err
+	}
+
+	return domain.Stats{
+		UrlsCount:  urlsCount,
+		UsersCount: usersCount,
+	}, nil
+}

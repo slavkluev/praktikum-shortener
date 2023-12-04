@@ -18,6 +18,9 @@ const (
 
 	// Адрес сервера
 	serverAddress = "localhost:8080"
+
+	// Доверенная подсеть
+	trustedSubnet = "172.17.0.0/16"
 )
 
 func Example() {
@@ -31,13 +34,14 @@ func Example() {
 	authenticator := middleware.NewAuthenticator([]byte("secret key"))
 	gzipEncoder := middleware.GzipEncoder{}
 	gzipDecoder := middleware.GzipDecoder{}
+	trustedSubnetChecker := middleware.NewTrustedSubnetChecker(trustedSubnet)
 
 	// Подключаем Middlewares
 	router.Use(authenticator.Handle)
 	router.Use(gzipEncoder.Handle)
 	router.Use(gzipDecoder.Handle)
 
-	httpDelivery.NewRecordHandler(baseURL, router, recordUsecase)
+	httpDelivery.NewRecordHandler(baseURL, router, recordUsecase, trustedSubnetChecker)
 
 	server := &http.Server{
 		Addr:    serverAddress,

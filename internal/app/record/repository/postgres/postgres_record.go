@@ -133,3 +133,31 @@ func (p *postgresRecordRepository) Delete(ctx context.Context, id uint64) error 
 
 	return err
 }
+
+// GetUrlsCount получение количества ссылок
+func (p *postgresRecordRepository) GetUrlsCount(ctx context.Context) (uint64, error) {
+	sqlStatement := "SELECT COUNT(*) FROM url"
+
+	var urlsCount uint64
+
+	err := p.db.QueryRowContext(ctx, sqlStatement).Scan(&urlsCount)
+	if err != nil {
+		return 0, err
+	}
+
+	return urlsCount, nil
+}
+
+// GetUsersCount получение количества пользователей
+func (p *postgresRecordRepository) GetUsersCount(ctx context.Context) (uint64, error) {
+	sqlStatement := "SELECT COUNT(DISTINCT user_id) FROM url"
+
+	var urlsCount uint64
+
+	err := p.db.QueryRowContext(ctx, sqlStatement).Scan(&urlsCount)
+	if err != nil {
+		return 0, err
+	}
+
+	return urlsCount, nil
+}

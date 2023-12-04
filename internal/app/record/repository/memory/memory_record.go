@@ -87,3 +87,18 @@ func (m *memoryRecordRepository) Delete(ctx context.Context, id uint64) error {
 
 	return nil
 }
+
+// GetUrlsCount получение количества ссылок
+func (m *memoryRecordRepository) GetUrlsCount(ctx context.Context) (uint64, error) {
+	return uint64(len(m.Records)), nil
+}
+
+// GetUsersCount получение количества пользователей
+func (m *memoryRecordRepository) GetUsersCount(ctx context.Context) (uint64, error) {
+	users := make(map[string]bool)
+	for _, record := range m.Records {
+		users[record.User] = true
+	}
+
+	return uint64(len(users)), nil
+}
