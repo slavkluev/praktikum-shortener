@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"path/filepath"
@@ -17,8 +18,11 @@ import (
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
 	"github.com/slavkluev/praktikum-shortener/internal/app/domain"
+	grpcDelivery "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/grpc"
+	pb "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/grpc/proto"
 	httpDelivery "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http"
 	"github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http/middleware"
 	recordMemoryRepo "github.com/slavkluev/praktikum-shortener/internal/app/record/repository/memory"
@@ -144,6 +148,20 @@ func main() {
 			}
 		}
 	}(*cfg)
+
+	recordsServer := grpcDelivery.NewRecordsServer(recordUsecase)
+	go func(recordsServer *grpcDelivery.RecordsServer) {
+		listen, err := net.Listen("tcp", ":3200")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		s := grpc.NewServer()
+		pb.RegisterRecordsServer(s, recordsServer)
+		if err := s.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
+	}(recordsServer)
 
 	log.Printf("listening on %s", cfg.ServerAddress)
 	<-ctx.Done()

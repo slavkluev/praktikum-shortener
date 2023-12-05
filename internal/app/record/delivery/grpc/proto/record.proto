@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package grpc;
+
+option go_package = "praktikum-shortener/internal/app/record/delivery/grpc/proto";
+
+message GetAllUrlsRequest {
+  string user = 1;
+}
+
+message ShortenURL {
+  string original_url = 1;
+  uint64 unique_id = 2;
+}
+
+message GetAllUrlsResponse {
+  repeated ShortenURL urls = 1;
+}
+
+message GetOriginalURLRequest {
+  uint64 unique_id = 1;
+}
+
+message GetOriginalURLResponse {
+  string original_url = 1;
+}
+
+message ShortenURLRequest {
+  string user = 1;
+  string original_url = 2;
+}
+
+message ShortenURLResponse {
+  uint64 unique_id = 1;
+}
+
+service Records {
+  rpc GetAllUrls(GetAllUrlsRequest) returns (GetAllUrlsResponse);
+  rpc GetOriginalURL(GetOriginalURLRequest) returns (GetOriginalURLResponse);
+  rpc ShortenURL(ShortenURLRequest) returns (ShortenURLResponse);
+}
