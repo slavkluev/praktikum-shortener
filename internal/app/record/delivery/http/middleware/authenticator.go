@@ -1,5 +1,5 @@
 // Package middlewares содержит Middlewares
-package middlewares
+package middleware
 
 import (
 	"crypto/hmac"
@@ -22,8 +22,8 @@ func NewAuthenticator(secret []byte) *Authenticator {
 }
 
 // Handle обработка Middleware
-func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func (a Authenticator) Handle(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		userCookie, userErr := r.Cookie("user_id")
 		signCookie, signErr := r.Cookie("sign")
 
@@ -47,7 +47,7 @@ func (a Authenticator) Handle(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		next.ServeHTTP(w, r)
-	}
+	})
 }
 
 func (a Authenticator) generateUserID() (string, string, error) {

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os/signal"
 	"path/filepath"
@@ -13,13 +14,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"google.golang.org/grpc"
 
-	"github.com/slavkluev/praktikum-shortener/internal/app/handlers"
-	"github.com/slavkluev/praktikum-shortener/internal/app/middlewares"
-	"github.com/slavkluev/praktikum-shortener/internal/app/storages"
+	"github.com/slavkluev/praktikum-shortener/internal/app/domain"
+	grpcDelivery "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/grpc"
+	pb "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/grpc/proto"
+	httpDelivery "github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http"
+	"github.com/slavkluev/praktikum-shortener/internal/app/record/delivery/http/middleware"
+	recordMemoryRepo "github.com/slavkluev/praktikum-shortener/internal/app/record/repository/memory"
+	recordPostgresRepo "github.com/slavkluev/praktikum-shortener/internal/app/record/repository/postgres"
+	recordUcase "github.com/slavkluev/praktikum-shortener/internal/app/record/usecase"
 )
 
 const shutdownTimeout = 5 * time.Second
@@ -40,6 +48,7 @@ type Config struct {
 	EnableHTTPS         bool   `mapstructure:"enable_https"`
 	CertFile            string `mapstructure:"cert_file"`
 	KeyFile             string `mapstructure:"key_file"`
+	TrustedSubnet       string `mapstructure:"trusted_subnet"`
 }
 
 func initializeViper() error {
@@ -54,6 +63,7 @@ func initializeViper() error {
 	pflag.BoolP("enable_https", "s", false, "Enable HTTPS")
 	pflag.StringP("cert_file", "", "server.pem", "Cert file")
 	pflag.StringP("key_file", "", "server.key", "Key file")
+	pflag.StringP("trusted_subnet", "", "", "Trusted subnet")
 
 	pflag.Parse()
 	err := viper.BindPFlags(pflag.CommandLine)
@@ -88,7 +98,18 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	defer stop()
 
-	var storage handlers.Storage
+	router := chi.NewRouter()
+
+	authenticator := middleware.NewAuthenticator([]byte("secret key"))
+	gzipEncoder := middleware.GzipEncoder{}
+	gzipDecoder := middleware.GzipDecoder{}
+	trustedSubnetChecker := middleware.NewTrustedSubnetChecker(cfg.TrustedSubnet)
+
+	router.Use(authenticator.Handle)
+	router.Use(gzipEncoder.Handle)
+	router.Use(gzipDecoder.Handle)
+
+	var recordRepository domain.RecordRepository
 	if cfg.DatabaseDSN != "" {
 		db, err := sql.Open("pgx", cfg.DatabaseDSN)
 		if err != nil {
@@ -96,27 +117,22 @@ func main() {
 		}
 		defer db.Close()
 
-		storage, err = storages.CreateDatabaseStorage(db)
+		recordRepository, err = recordPostgresRepo.NewPostgresRecordRepository(db)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		storage, err = storages.CreateSimpleStorage(cfg.FileStoragePath, cfg.FileStorageSyncTime)
-		if err != nil {
-			log.Fatal(err)
-		}
+		recordRepository = recordMemoryRepo.NewMemoryRecordRepository()
 	}
 
-	mws := []handlers.Middleware{
-		middlewares.GzipEncoder{},
-		middlewares.GzipDecoder{},
-		middlewares.NewAuthenticator([]byte("secret key")),
-	}
+	timeoutContext := time.Duration(5) * time.Second
+	recordUsecase := recordUcase.NewRecordUsecase(recordRepository, timeoutContext)
 
-	handler := handlers.NewHandler(storage, cfg.BaseURL, mws)
+	httpDelivery.NewRecordHandler(cfg.BaseURL, router, recordUsecase, trustedSubnetChecker)
+
 	server := &http.Server{
 		Addr:    cfg.ServerAddress,
-		Handler: handler,
+		Handler: router,
 	}
 
 	go func(cfg Config) {
@@ -132,6 +148,20 @@ func main() {
 			}
 		}
 	}(*cfg)
+
+	recordsServer := grpcDelivery.NewRecordsServer(recordUsecase)
+	go func(recordsServer *grpcDelivery.RecordsServer) {
+		listen, err := net.Listen("tcp", ":3200")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		s := grpc.NewServer()
+		pb.RegisterRecordsServer(s, recordsServer)
+		if err := s.Serve(listen); err != nil {
+			log.Fatal(err)
+		}
+	}(recordsServer)
 
 	log.Printf("listening on %s", cfg.ServerAddress)
 	<-ctx.Done()
